@@ -10,11 +10,6 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 
-var r = new ChainExpression<string, int, int[]>(p => new[] { (int)p[0], (int)p[1] })
-    .AddChain((p, c) => c.Where(a => a == 0))
-    .AddChain((p, c) => c)
-    .GetExpression();
-
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<HttpContextAccessor>();

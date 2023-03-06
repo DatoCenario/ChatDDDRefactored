@@ -25,7 +25,16 @@ public class ChainExpression<TInitial, TIn, TOut>
     {
         return _expression;
     }
+
+    public ChainExpression<TInitial, TOut, TNewIn> AddChainWithSubstitution<TNewIn>(
+        Expression<Func<TInitial, TOut, TNewIn>> newChainExp,
+        Dictionary<string, Expression> args)
+    {
+        newChainExp = newChainExp.SubstituteArgs(args);
+        return AddChain(newChainExp);
+    }
     
+
     public ChainExpression<TInitial, TOut, TNewIn> AddChain<TNewIn>(
         Expression<Func<TInitial, TOut, TNewIn>> newChainExp)
     {

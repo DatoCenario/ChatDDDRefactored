@@ -64,21 +64,28 @@ public abstract class SpecificationBase<TEntity> where TEntity: class
         Expression<Func<TEntity, IEnumerable<TChild>>> includeOrderExp;
         if (!desc)
         {
-            includeOrderExp = p => new SubstituteArg<Func<TEntity, IEnumerable<TChild>>>("selector").GetValue()(p)
-                .OrderBy(new SubstituteArg<Func<TChild, TOrderKey>>("order").GetValue())
-                .Take(limit);;
+            includeOrderExp = ChainExpressionFactory.FromLambda(exp)
+                .AddChainWithSubstitution((p, c) => c
+                        .OrderBy(new SubstituteArg<Func<TChild, TOrderKey>>("order").GetValue())
+                        .Take(limit),
+                    new Dictionary<string, Expression>
+                    {
+                        { "order", orderExp },
+                    })
+                .GetExpression();
         }
         else
         {
-            includeOrderExp = p => new SubstituteArg<Func<TEntity, IEnumerable<TChild>>>("selector").GetValue()(p)
-                .OrderByDescending(new SubstituteArg<Func<TChild, TOrderKey>>("order").GetValue())
-                .Take(limit);;
+            includeOrderExp = ChainExpressionFactory.FromLambda(exp)
+                .AddChainWithSubstitution((p, c) => c
+                        .OrderByDescending(new SubstituteArg<Func<TChild, TOrderKey>>("order").GetValue())
+                        .Take(limit),
+                    new Dictionary<string, Expression>
+                    {
+                        { "order", orderExp },
+                    })
+                .GetExpression();
         }
-        
-        includeOrderExp = includeOrderExp.SubstituteArgs(new Dictionary<string, Expression>
-        {
-            { "order", orderExp },
-        });
 
         return includeOrderExp;
     }
@@ -88,16 +95,12 @@ public abstract class SpecificationBase<TEntity> where TEntity: class
         Expression<Func<TChild, bool>> filter
        )
     {
-        Expression<Func<TEntity, IEnumerable<TChild>>>  includeExp = p =>
-            new SubstituteArg<Func<TEntity, IEnumerable<TChild>>>("selector").GetValue()(p)
-                .Where(new SubstituteArg<Func<TChild, bool>>("filter").GetValue());;
-        
-        includeExp = includeExp.SubstituteArgs(new Dictionary<string, Expression>
-        {
-            { "selector", childSelector },
-            { "filter", filter },
-        });
-
-        return includeExp;
+        return ChainExpressionFactory.FromLambda(childSelector)
+            .AddChainWithSubstitution((p, c) => c
+                .Where(new SubstituteArg<Func<TChild, bool>>("filter").GetValue()), new Dictionary<string, Expression>
+            {
+                { "filter", filter },
+            })
+            .GetExpression();
     }
 }
