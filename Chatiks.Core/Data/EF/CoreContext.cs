@@ -17,6 +17,12 @@ public class CoreContext : DbContext
     }
     
     public DbSet<Image> Images { get; set; }
+    
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        // For migrator because ef tools v7 not support --provider option
+        base.OnConfiguring(optionsBuilder.UseNpgsql());
+    }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

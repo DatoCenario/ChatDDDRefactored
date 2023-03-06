@@ -9,6 +9,8 @@ namespace Chatiks.Core;
 
 public class DiManager: IDiManager
 {
+    private static bool _migated = false;
+    
     public void Register(IServiceCollection services)
     {
         services.AddScoped<ImagesManager>(p =>
@@ -17,6 +19,13 @@ public class DiManager: IDiManager
             var connStr = Environment.GetEnvironmentVariable("EF_CORE_CONN") ?? configuration.GetValue<string>("PgDbConnectionString");
             var contextOpt = new DbContextOptionsBuilder<CoreContext>().UseNpgsql(connStr).Options;
             var context = new CoreContext(contextOpt);
+            
+            // Refactor!!!
+            if (!_migated)
+            {
+                context.Database.Migrate();
+            }
+            
             return new ImagesManager(new CoreRepository(context));
         });
     }

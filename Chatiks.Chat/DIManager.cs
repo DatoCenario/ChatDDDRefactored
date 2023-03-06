@@ -10,6 +10,7 @@ namespace Chatiks.Chat;
 
 public class DIManager: IDiManager
 {
+    private static bool _migated = false;
     public void Register(IServiceCollection services)
     {
         services.AddScoped<ChatManager>(p =>
@@ -18,6 +19,13 @@ public class DIManager: IDiManager
             var connStr = Environment.GetEnvironmentVariable("EF_CORE_CONN") ?? configuration.GetValue<string>("PgDbConnectionString");
             var contextOpt = new DbContextOptionsBuilder<ChatContext>().UseNpgsql(connStr).Options;
             var context = new ChatContext(contextOpt);
+
+            // Refactor!!!
+            if (!_migated)
+            {
+                context.Database.Migrate();
+            }
+            
             var imgManager = p.GetService<ImagesManager>();
             return new ChatManager(new ChatsRepository(context), imgManager);
         });

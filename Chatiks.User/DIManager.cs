@@ -9,6 +9,7 @@ namespace Chatiks.User;
 
 public class DIManager: IDiManager
 {
+    private static bool _migated = false;
     public void Register(IServiceCollection services)
     {
         services.AddScoped<UserContext>(p =>
@@ -17,6 +18,13 @@ public class DIManager: IDiManager
             var connStr = Environment.GetEnvironmentVariable("EF_CORE_CONN") ?? configuration.GetValue<string>("PgDbConnectionString");
             var contextOpt = new DbContextOptionsBuilder<UserContext>().UseNpgsql(connStr).Options;
             var context = new UserContext(contextOpt);
+            
+            // Refactor!!!
+            if (!_migated)
+            {
+                context.Database.Migrate();
+            }
+            
             return context;
         });
         services.AddIdentity<Data.EF.Domain.User.User, IdentityRole<long>>()

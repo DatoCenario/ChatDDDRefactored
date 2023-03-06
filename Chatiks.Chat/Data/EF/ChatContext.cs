@@ -6,6 +6,11 @@ namespace Chatiks.Chat.Data.EF;
 
 public class ChatContext : DbContext
 {
+    public ChatContext()
+    {
+        
+    }
+    
     public ChatContext(DbContextOptions<ChatContext> options) : base(options)
     {
     }
@@ -15,6 +20,12 @@ public class ChatContext : DbContext
     public DbSet<ChatMessage> ChatMessages { get; set; }
     public DbSet<ChatRole> ChatRoles { get; set; }
     public DbSet<ChatMessageImageLink> ImageLinks { get; set; }
+    
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        // For migrator because ef tools v7 not support --provider option
+        base.OnConfiguring(optionsBuilder.UseNpgsql());
+    }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

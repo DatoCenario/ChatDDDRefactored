@@ -3,12 +3,13 @@ using Chatiks;
 using Chatiks.Extensions;
 using Chatiks.GraphQL;
 using Chatiks.Hubs;
-using Chatiks.Tools.DI;using Chatiks.Tools.Extensions.Models;
+using Chatiks.Tools.DI;
 using Mapster;
 using MediatR;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore.Migrations.Internal;
 
 var builder = WebApplication.CreateBuilder(args);
 
