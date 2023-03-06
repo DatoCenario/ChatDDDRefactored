@@ -13,7 +13,7 @@ public class SendMessageToChatCommand
         Text = text;
         ChatId = chatId;
         SendTime = sendTime;
-        Images = Images;
+        Images = images;
     }
 
     public long ExternalOwnerId {get;}

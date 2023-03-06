@@ -1,6 +1,6 @@
-using System.Data.Entity;
 using Chatiks.User.Specifications;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace Chatiks.User.Extensions;
 

@@ -61,7 +61,7 @@ public class ImagesManager
     
     public async Task<List<long>> UploadNewImagesAsync(ICollection<string> base64texts)
     {
-        var imageIds = new List<long>();
+        var images= new List<Image>();
         var imagesToAdd = new List<string>();
 
         foreach (var base64text in base64texts)
@@ -99,18 +99,14 @@ public class ImagesManager
                 if (imageExisting == null)
                 {
                     var entry = await _coreRepository.AddImageAsync(image);
-                    imageIds.Add(entry.Entity.Id);
-                }
-                else
-                {
-                    imageIds.Add(imageExisting.Id);
+                    images.Add(entry.Entity);
                 }
             }
 
             await _coreRepository.SaveChangesAsync();
         }
 
-        return imageIds;
+        return images.Select(x => x.Id).ToList();
     }
     
     public Task<Image> GetImage(ImagesSpecification specification)

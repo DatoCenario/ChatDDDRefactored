@@ -1,10 +1,9 @@
-using System.Data.Entity;
-using System.Net.Mime;
 using Chatiks.Chat.Commands;
 using Chatiks.Chat.Data.EF;
 using Chatiks.Chat.Data.EF.Domain.Chat;
 using Chatiks.Chat.Specifications;
 using Chatiks.Core.Managers;
+using Microsoft.EntityFrameworkCore;
 
 namespace Chatiks.Chat.Managers;
 
@@ -62,15 +61,15 @@ public class ChatManager
 
         var imagesIds = await _imagesManager.UploadNewImagesAsync(imagesBase64);
 
-        var spec = new ChatSpecification(new ChatFilter(new [] {chatId}));
-        spec.IncludeChatUsers(new ChatUserFilter()
-        {
-            UserId = userId
-        });
-
         using (var io = _chatsRepository.BeginIsolatedOperation())
         {
-            var chat = await _chatsRepository.LoadChatBySpecificationAsync();
+            var spec = new ChatSpecification(new ChatFilter(new [] {chatId}));
+            spec.IncludeChatUsers(new ChatUserFilter()
+            {
+                UserId = userId
+            });
+            
+            var chat = await _chatsRepository.LoadChatBySpecificationAsync(spec);
 
             if (chat == null)
             {

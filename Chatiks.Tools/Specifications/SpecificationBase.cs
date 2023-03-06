@@ -1,9 +1,6 @@
-using System.Data.Entity;
 using System.Linq.Expressions;
-using Chatiks.Tools.Extensions;
 using Chatiks.Tools.Extensions.Models;
 using LinqSpecs;
-using Mapster;
 
 namespace Chatiks.Chat.Specifications;
 

@@ -1,6 +1,5 @@
-using System.Data.Entity;
 using Chatiks.Chat.Data.EF.Domain.Chat;
-using LinqSpecs;
+using Microsoft.EntityFrameworkCore;
 
 namespace Chatiks.Chat.Specifications;
 

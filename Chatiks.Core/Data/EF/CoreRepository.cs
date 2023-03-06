@@ -1,6 +1,6 @@
-using System.Data.Entity;
 using Chatiks.Core.Data.EF.Domain;
 using Chatiks.Core.Specifications;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace Chatiks.Core.Data.EF;

@@ -87,6 +87,8 @@ namespace Chatiks.Chat.Data.EF.Migrations
 
                     b.HasIndex("ChatMessageId");
 
+                    b.HasIndex("Id");
+
                     b.ToTable("ImageLinks");
                 });
 
@@ -130,6 +132,8 @@ namespace Chatiks.Chat.Data.EF.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ChatId");
+
+                    b.HasIndex("Id");
 
                     b.ToTable("ChatUsers");
                 });

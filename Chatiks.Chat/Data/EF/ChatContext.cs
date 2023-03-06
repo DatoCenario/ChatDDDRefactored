@@ -46,8 +46,12 @@ public class ChatContext : DbContext
             .WithOne(e => e.ChatMessage)
             .HasForeignKey(e => e.ChatMessageId);
 
-        builder.Entity<ChatMessage>();
-
+        builder.Entity<ChatMessageImageLink>()
+            .HasIndex(c => c.Id);
+        
+        builder.Entity<ChatUser>()
+            .HasIndex(c => c.Id);
+        
         base.OnModelCreating(builder);
     }
 }

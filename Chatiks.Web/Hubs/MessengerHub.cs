@@ -1,4 +1,3 @@
-using System.Transactions;
 using Chatiks.Chat.Managers;
 using Chatiks.Chat.Specifications;
 using Chatiks.Core.Managers;
@@ -37,57 +36,54 @@ public class MessengerHub: Hub
     {
         var response = new SendMessageToChatResponse();
         
-        using (var transactionScope = new TransactionScope())
+        var user = await _userManager.FindByNameAsync(Context.User.Identity.Name);
+
+        response.MessageId = await _chatManager.SendMessageToChatAsync(user.Id, request.ChatId, request.Text, request.ImagesBase64);
+
+        var spec = new ChatSpecification(new ChatFilter(new []{request.ChatId}));
+        spec.IncludeChatUsers();
+        spec.IncludeMessages(new MessageFilter()
         {
-            var user = await _userManager.FindByNameAsync(Context.User.Identity.Name);
-
-            response.MessageId = await _chatManager.SendMessageToChatAsync(user.Id, request.ChatId, request.Text, request.ImagesBase64);
-
-            var spec = new ChatSpecification(new ChatFilter(new []{request.ChatId}));
-            spec.IncludeChatUsers();
-            spec.IncludeMessages(new MessageFilter()
-            {
-                Id = response.MessageId
-            });
-            var chat = await _chatManager.GetChat(spec);
-            var userIds = chat.ChatUsers.Select(c => c.ExternalUserId);
-            var images = await _imagesManager.GetImages(new ImagesSpecification(new ImagesFilter()
-            {
-                Ids = chat.Messages.First().MessageImageLinks.Select(i => i.ExternalImageId).ToArray()
-            }));
+            Id = response.MessageId
+        });
+        var chat = await _chatManager.GetChat(spec);
+        var userIds = chat.ChatUsers.Select(c => c.ExternalUserId);
+        var images = await _imagesManager.GetImages(new ImagesSpecification(new ImagesFilter()
+        {
+            Ids = chat.Messages.First().MessageImageLinks.Select(i => i.ExternalImageId).ToArray()
+        }));
             
-            response.Text = request.Text;
-            response.ChatId = request.ChatId;
-            response.SendTime = DateTime.Now;
-            response.SenderName = user.FullName;
-            response.Images = images.Select(i => new SendMessageToChatImageResponse
-            {
-                Base64String = i.Base64Text
-            }).ToArray();
+        response.Text = request.Text;
+        response.ChatId = request.ChatId;
+        response.SendTime = DateTime.Now;
+        response.SenderName = user.FullName;
+        response.Images = images.Select(i => new SendMessageToChatImageResponse
+        {
+            Base64String = i.Base64Text
+        }).ToArray();
 
-            // Refactor this !!!
-            response.IsMe = true;
+        // Refactor this !!!
+        response.IsMe = true;
 
-            await Clients.Caller.SendCoreAsync("messageSendEvent", new []
-            {
-                response
-            });
+        await Clients.Caller.SendCoreAsync("messageSendEvent", new []
+        {
+            response
+        });
 
-            var connections = userIds
-                .Where(u => u != user.Id)
-                .Select(u => _userConnections.GetValueOrDefault(u))
-                .Where(x => !string.IsNullOrWhiteSpace(x))
-                .ToArray();
+        var connections = userIds
+            .Where(u => u != user.Id)
+            .Select(u => _userConnections.GetValueOrDefault(u))
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToArray();
 
-            response.IsMe = false;
+        response.IsMe = false;
 
-            var clientsFromChat = Clients.Clients(connections);
+        var clientsFromChat = Clients.Clients(connections);
 
-            await clientsFromChat.SendCoreAsync("messageSendEvent", new []
-            {
-                response
-            });
-        }
+        await clientsFromChat.SendCoreAsync("messageSendEvent", new []
+        {
+            response
+        });
     }
     
     [HubMethodName("сreateChat")]
@@ -131,7 +127,8 @@ public class MessengerHub: Hub
         var other = await _userManager.FindByIdAsync(userId.ToString());
 
         response.ChatId = await _chatManager.CreateNewPrivateChatAsync(user.Id, other.Id);
-        
+
+        response.IsPrivate = true;
         response.ChatUsers = new[]{user, other}.Select(u => u.Adapt<CreateChatChatUserResponse>()).ToArray();
 
         response.Name = $"{other.FirstName} {other.LastName}";
