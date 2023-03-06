@@ -6,6 +6,11 @@ namespace Chatiks.Core.Data.EF;
 
 public class CoreContext : DbContext
 {
+    public CoreContext()
+    {
+        
+    }
+    
     public CoreContext(DbContextOptions<CoreContext> options): base(options)
     {
         

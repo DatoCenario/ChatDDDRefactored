@@ -1,5 +1,6 @@
 using Chatiks.Chat.Data.EF;
 using Chatiks.Chat.Managers;
+using Chatiks.Core.Managers;
 using Chatiks.Tools.DI;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -17,7 +18,8 @@ public class DIManager: IDiManager
             var connStr = Environment.GetEnvironmentVariable("EF_CORE_CONN") ?? configuration.GetValue<string>("PgDbConnectionString");
             var contextOpt = new DbContextOptionsBuilder<ChatContext>().UseNpgsql(connStr).Options;
             var context = new ChatContext(contextOpt);
-            return new ChatManager(new ChatsRepository(context));
+            var imgManager = p.GetService<ImagesManager>();
+            return new ChatManager(new ChatsRepository(context), imgManager);
         });
     }
 }

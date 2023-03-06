@@ -9,15 +9,15 @@ namespace Chatiks.Chat.Specifications;
 
 public class ChatUserFilter: Specification<ChatUser>
 {
-    public long? Id { get; set; }
+    public long? UserId { get; set; }
     
     public override Expression<Func<ChatUser, bool>> ToExpression()
     {
         var expression = PredicateBuilder.True<ChatUser>();
 
-        if (Id.HasValue)
+        if (UserId.HasValue)
         {
-            expression = expression.And(cm => cm.Id == Id.Value);
+            expression = expression.And(cm => cm.ExternalUserId == UserId.Value);
         }
 
         return expression;

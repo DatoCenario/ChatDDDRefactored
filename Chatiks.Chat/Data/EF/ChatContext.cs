@@ -11,6 +11,7 @@ public class ChatContext : DbContext
     }
 
     public DbSet<Domain.Chat.Chat> Chats { get; set; }
+    public DbSet<Domain.Chat.ChatUser> ChatUsers { get; set; }
     public DbSet<ChatMessage> ChatMessages { get; set; }
     public DbSet<ChatRole> ChatRoles { get; set; }
     public DbSet<ChatMessageImageLink> ImageLinks { get; set; }

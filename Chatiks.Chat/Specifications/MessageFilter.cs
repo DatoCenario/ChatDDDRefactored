@@ -8,11 +8,12 @@ namespace Chatiks.Chat.Specifications;
 
 public class MessageFilter: Specification<ChatMessage>
 {
-    public int? Id { get; set; }
+    public long? Id { get; set; }
     public int? OwnerId { get; set; }
     public string Text { get; set; }
     public DateTime? SendTimeFrom { get; set; }
     public DateTime? SendTimeTo { get; set; }
+    public long? ChatId { get; set; }
     
     
     public override Expression<Func<ChatMessage, bool>> ToExpression()
@@ -39,7 +40,12 @@ public class MessageFilter: Specification<ChatMessage>
         {
             expression = expression.And(cm => cm.SendTime <= SendTimeTo.Value);
         }
-
+        if (ChatId.HasValue)
+        {
+            expression = expression.And(cm => cm.ChatId <= ChatId.Value);
+        }
+        
+        
         return expression;
     }
 }

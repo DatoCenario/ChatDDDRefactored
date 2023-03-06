@@ -1,9 +1,15 @@
 using System.Transactions;
 using Chatiks.Chat.Managers;
+using Chatiks.Chat.Specifications;
+using Chatiks.Core.Managers;
+using Chatiks.Core.Specifications;
+using Chatiks.Models;
+using Mapster;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using WebApplication2.Hubs.Models.Chat;
 
 namespace Chatiks.Hubs;
@@ -16,49 +22,70 @@ public class MessengerHub: Hub
 
     private readonly UserManager<User.Data.EF.Domain.User.User> _userManager;
     private readonly ChatManager _chatManager;
+    private readonly ImagesManager _imagesManager;
 
 
-    public MessengerHub(UserManager<User.Data.EF.Domain.User.User> userManager, ChatManager chatManager)
+    public MessengerHub(UserManager<User.Data.EF.Domain.User.User> userManager, ChatManager chatManager, ImagesManager imagesManager)
     {
         _userManager = userManager;
         _chatManager = chatManager;
+        _imagesManager = imagesManager;
     }
 
     [HubMethodName("sendMessageToChat")]
     public async Task SendMessageToChat(SendMessageToChatRequest request)
     {
+        var response = new SendMessageToChatResponse();
+        
         using (var transactionScope = new TransactionScope())
         {
             var user = await _userManager.FindByNameAsync(Context.User.Identity.Name);
 
-            var result = await _chatManager.SendMessageToChatAsync(user, request.ChatId, request.Text, request.ImagesBase64);
+            response.MessageId = await _chatManager.SendMessageToChatAsync(user.Id, request.ChatId, request.Text, request.ImagesBase64);
+
+            var spec = new ChatSpecification(new ChatFilter(new []{request.ChatId}));
+            spec.IncludeChatUsers();
+            spec.IncludeMessages(new MessageFilter()
+            {
+                Id = response.MessageId
+            });
+            var chat = await _chatManager.GetChat(spec);
+            var userIds = chat.ChatUsers.Select(c => c.ExternalUserId);
+            var images = await _imagesManager.GetImages(new ImagesSpecification(new ImagesFilter()
+            {
+                Ids = chat.Messages.First().MessageImageLinks.Select(i => i.ExternalImageId).ToArray()
+            }));
+            
+            response.Text = request.Text;
+            response.ChatId = request.ChatId;
+            response.SendTime = DateTime.Now;
+            response.SenderName = user.FullName;
+            response.Images = images.Select(i => new SendMessageToChatImageResponse
+            {
+                Base64String = i.Base64Text
+            }).ToArray();
 
             // Refactor this !!!
-            result.IsMe = true;
-        
+            response.IsMe = true;
+
             await Clients.Caller.SendCoreAsync("messageSendEvent", new []
             {
-                result
+                response
             });
-        
-            var userIds = await _applicationContext.Users
-                .Where(u => u.ChatUsers.Any(c => c.ChatId == request.ChatId))
-                .Select(x => x.Id)
-                .ToArrayAsync();
-        
+
             var connections = userIds
                 .Where(u => u != user.Id)
                 .Select(u => _userConnections.GetValueOrDefault(u))
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .ToArray();
 
-            result.IsMe = false;
+            response.IsMe = false;
 
             var clientsFromChat = Clients.Clients(connections);
 
             await clientsFromChat.SendCoreAsync("messageSendEvent", new []
             {
-                result
+                response
             });
         }
     }
@@ -66,54 +93,61 @@ public class MessengerHub: Hub
     [HubMethodName("сreateChat")]
     public async Task CreateChat([FromBody] CreateChatRequest request)
     {
+        var response = new CreateChatResponse();
+        
         var user = await _userManager.FindByNameAsync(Context.User.Identity.Name);
+        var otherIds = request.UsersIds.Except(new[] { user.Id }).ToArray();
+        
+        response.ChatId = await _chatManager.CreateNewChatAsync(user.Id, otherIds, request.Name);
 
-        var others = await _applicationContext.Users
-            .Where(x => request.UsersIds.Contains(x.Id) && x.Id != user.Id)
+        var allChatUsersIds = otherIds.Concat(new[] { user.Id }).ToArray();
+
+        var allChatUsers = await _userManager.Users
+            .Where(u => allChatUsersIds.Contains(u.Id))
             .ToArrayAsync();
 
-        var result = await _messagesService.CreateNewChat(user, new [] {user}.Concat(others).ToArray(), request.Name);
-
-        var connections = result.ChatUsers.Select(x => x.Id)
+        var connections = allChatUsersIds
             .Select(u => _userConnections.GetValueOrDefault(u))
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .ToArray();
         
         var clientsFromChat = Clients.Clients(connections);
+
+        response.Name = request.Name;
+        response.ChatUsers = allChatUsers.Select(u => u.Adapt<CreateChatChatUserResponse>()).ToArray();
         
         await clientsFromChat.SendCoreAsync("chatCreateEvent", new []
         {
-            result
+            response
         });
     }
     
     [HubMethodName("сreatePrivateChat")]
     public async Task CreatePrivateChat(long userId)
     {
+        var response = new CreateChatResponse();
+        
         var user = await _userManager.FindByNameAsync(Context.User.Identity.Name);
         var other = await _userManager.FindByIdAsync(userId.ToString());
 
-        var result = await _messagesService.CreateNewPrivateChat(user, other);
+        response.ChatId = await _chatManager.CreateNewPrivateChatAsync(user.Id, other.Id);
+        
+        response.ChatUsers = new[]{user, other}.Select(u => u.Adapt<CreateChatChatUserResponse>()).ToArray();
 
-        var connections = result.ChatUsers.Select(x => x.Id)
-            .Where(x => user.Id != x)
-            .Select(u => _userConnections.GetValueOrDefault(u))
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .ToArray();
-        
-        var clientsFromChat = Clients.Clients(connections);
-        
-        result.Name = $"{other.FirstName} {other.LastName}";
+        response.Name = $"{other.FirstName} {other.LastName}";
         await Clients.Caller.SendCoreAsync("chatCreateEvent", new[]
         {
-            result
+            response
         });
-        
-        result.Name = $"{user.FirstName} {user.LastName}";
-        await clientsFromChat.SendCoreAsync("chatCreateEvent", new []
+
+        if (_userConnections.ContainsKey(other.Id))
         {
-            result
-        });
+            response.Name = user.FullName;
+            await Clients.Client(_userConnections[other.Id]).SendCoreAsync("chatCreateEvent", new []
+            {
+                response
+            });
+        }
     }
 
     [HubMethodName("addUserToChat")]
@@ -121,15 +155,19 @@ public class MessengerHub: Hub
     {
         var inviter = await _userManager.FindByNameAsync(Context.User.Identity.Name);
         var user = await _userManager.FindByIdAsync(request.UserId.ToString());
+        
+        var response = new AddUserToChatResponse();
+        response.ChatId = request.ChatId;
+        response.FirstName = user.FirstName;
+        response.LastName = user.LastName;
 
-        var result = await _messagesService.AddUserToChat(inviter, user, request.ChatId);
+        await _chatManager.AddUserToChatAsync(inviter.Id, user.Id, request.ChatId);
+
+        var spec = new ChatSpecification(new ChatFilter(new []{request.ChatId}));
+        spec.IncludeChatUsers();
+        var chat = await _chatManager.GetChat(spec);
         
-        var userIds = await _applicationContext.Users
-            .Where(u => u.ChatUsers.Any(c => c.ChatId == request.ChatId))
-            .Select(x => x.Id)
-            .ToArrayAsync();
-        
-        var connections = userIds
+        var connections = chat.ChatUsers.Select(u => u.ExternalUserId)
             .Select(u => _userConnections.GetValueOrDefault(u))
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .ToArray();
@@ -138,7 +176,7 @@ public class MessengerHub: Hub
 
         await clientsFromChat.SendCoreAsync("addUserEvent", new []
         {
-            result
+            response
         });
     }
 
@@ -146,25 +184,19 @@ public class MessengerHub: Hub
     public async Task LeaveChat(long chatId)
     {
         var me = await _userManager.FindByNameAsync(Context.User.Identity.Name);
-        
-        var tr = await _applicationContext.Database.BeginTransactionAsync();
-
-        var result = await _messagesService.LeaveChat(me, chatId);
-        
-        await tr.CommitAsync();
-
-        if (result == null)
+        var response = new LeaveChatResponse()
         {
-            return;
-        }
+            ChatId = chatId,
+            LeavedUserName = me.FullName
+        };
 
-        var userIds = await _applicationContext.Chats
-            .Where(c => c.Id == chatId)
-            .SelectMany(c => c.ChatUsers)
-            .Select(u => u.Id)
-            .ToArrayAsync();
+        await _chatManager.LeaveChat(me.Id, chatId);
         
-        var connections = userIds
+        var spec = new ChatSpecification(new ChatFilter(new []{chatId}));
+        spec.IncludeChatUsers();
+        var chat = await _chatManager.GetChat(spec);
+        
+        var connections = chat.ChatUsers.Select(u => u.ExternalUserId)
             .Select(u => _userConnections.GetValueOrDefault(u))
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .ToArray();
@@ -173,7 +205,7 @@ public class MessengerHub: Hub
 
         await clientsFromChat.SendCoreAsync("leaveChatEvent", new []
         {
-            result
+            response
         });
     }
     

@@ -9,7 +9,7 @@ public class MapsterConfigure
     {
         var configurators = AppDomain.CurrentDomain.GetAssemblies()
             .SelectMany(a => a.GetTypes())
-            .Where(t => typeof(IMapsterConfurator).IsAssignableFrom(t))
+            .Where(t => typeof(IMapsterConfurator).IsAssignableFrom(t) && t.IsClass && !t.IsAbstract)
             .Select(t => (IMapsterConfurator)Activator.CreateInstance(t))
             .ToArray();
         
@@ -17,7 +17,5 @@ public class MapsterConfigure
         {
             mapsterConfurator.Configure(config);
         }
-        
-        
     }
 }

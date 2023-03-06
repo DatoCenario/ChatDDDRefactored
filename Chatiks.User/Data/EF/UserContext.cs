@@ -7,9 +7,14 @@ namespace Chatiks.User.Data.EF;
 
 public class UserContext : IdentityDbContext<Domain.User.User, IdentityRole<long>, long>
 {
-    public UserContext(DbContextOptions<UserContext> options): base(options)
+    public UserContext()
     {
         
+    }
+    
+    public UserContext(DbContextOptions<UserContext> options): base(options)
+    {
+
     }
 
     protected override void OnModelCreating(ModelBuilder builder)
