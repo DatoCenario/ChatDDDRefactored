@@ -3,6 +3,7 @@ using System;
 using Chatiks.Chat.Data.EF;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Chatiks.Chat.Data.EF.Migrations
 {
     [DbContext(typeof(ChatContext))]
-    partial class ChatContextModelSnapshot : ModelSnapshot
+    [Migration("20230307120004_Initial2")]
+    partial class Initial2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -30,11 +33,6 @@ namespace Chatiks.Chat.Data.EF.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Discriminator")
-                        .IsRequired()
-                        .HasMaxLength(13)
-                        .HasColumnType("character varying(13)");
-
                     b.Property<string>("Field")
                         .IsRequired()
                         .HasColumnType("text");
@@ -43,9 +41,7 @@ namespace Chatiks.Chat.Data.EF.Migrations
 
                     b.ToTable("AbstractClass", (string)null);
 
-                    b.HasDiscriminator<string>("Discriminator").HasValue("AbstractClass");
-
-                    b.UseTphMappingStrategy();
+                    b.UseTptMappingStrategy();
                 });
 
             modelBuilder.Entity("Chatiks.Chat.Data.EF.Domain.Chat.Chat", b =>
@@ -172,7 +168,11 @@ namespace Chatiks.Chat.Data.EF.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.HasDiscriminator().HasValue("Class1");
+                    b.ToTable("Class1", null, t =>
+                        {
+                            t.Property("Id")
+                                .HasColumnName("Class1Id");
+                        });
                 });
 
             modelBuilder.Entity("Chatiks.Chat.Data.EF.Domain.Chat.Class2", b =>
@@ -183,7 +183,11 @@ namespace Chatiks.Chat.Data.EF.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.HasDiscriminator().HasValue("Class2");
+                    b.ToTable("Class2", null, t =>
+                        {
+                            t.Property("Id")
+                                .HasColumnName("Class2Id");
+                        });
                 });
 
             modelBuilder.Entity("Chatiks.Chat.Data.EF.Domain.Chat.ChatMessage", b =>
@@ -217,6 +221,24 @@ namespace Chatiks.Chat.Data.EF.Migrations
                         .IsRequired();
 
                     b.Navigation("Chat");
+                });
+
+            modelBuilder.Entity("Chatiks.Chat.Data.EF.Domain.Chat.Class1", b =>
+                {
+                    b.HasOne("Chatiks.Chat.Data.EF.Domain.Chat.AbstractClass", null)
+                        .WithOne()
+                        .HasForeignKey("Chatiks.Chat.Data.EF.Domain.Chat.Class1", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Chatiks.Chat.Data.EF.Domain.Chat.Class2", b =>
+                {
+                    b.HasOne("Chatiks.Chat.Data.EF.Domain.Chat.AbstractClass", null)
+                        .WithOne()
+                        .HasForeignKey("Chatiks.Chat.Data.EF.Domain.Chat.Class2", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Chatiks.Chat.Data.EF.Domain.Chat.Chat", b =>
