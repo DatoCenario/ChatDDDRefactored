@@ -11,21 +11,9 @@ public class ChatDomainModel: UniqueDomainModelBase
 
     public ICollection<ChatMessageDomainModel> Messages { get; private set; }
     
-    // method for sending message
-    public void SendMessage(string text, ICollection<string> imagesBase64)
+
+    public void SendMessage(string text, long userId, ICollection<string> imagesBase64)
     {
-        // validate that message not empty
-        if (string.IsNullOrEmpty(text) && imagesBase64.Count == 0)
-        {
-            throw new Exception("Message is empty");
-        }
-        
-        var images = new List<ChatMessageImageDomainModel>();
-        foreach (var imageBase64 in imagesBase64)
-        {
-            images.Add(new ChatMessageImageDomainModel(null, imageBase64));
-        }
-        
-        Messages.Add(new ChatMessageDomainModel(null, text, DateTime.Now, images));
+        Messages.Add(new ChatMessageDomainModel(null, text, DateTime.Now, userId, imagesBase64));
     }
 }

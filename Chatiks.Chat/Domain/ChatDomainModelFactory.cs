@@ -24,6 +24,7 @@ public class ChatDomainModelFactory
             message.Id,
             message.Text,
             message.SendTime,
+            message.ExternalOwnerId,
             message.MessageImageLinks.Select(i => CreateFromImageLink(i)).ToList());
     }   
     
@@ -37,11 +38,11 @@ public class ChatDomainModelFactory
         return new ChatDomainModel(null, new List<ChatMessageDomainModel>());
     }
     
-    public ChatMessageDomainModel CreateNewMessage()
+    public ChatMessageDomainModel CreateNewMessage(long userId, string text = null, ICollection<string> imagesBase64 = null)
     {
-        return new ChatMessageDomainModel(null, null, DateTime.Now, new List<ChatMessageImageDomainModel>());
+        return new ChatMessageDomainModel(null, text, DateTime.Now, userId, imagesBase64);
     }
-    
+
     public ChatMessageImageDomainModel CreateNewImage(string base64Text)
     {
         return new ChatMessageImageDomainModel(null, base64Text);
