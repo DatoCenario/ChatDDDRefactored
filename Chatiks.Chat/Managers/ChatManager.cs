@@ -1,6 +1,7 @@
 using Chatiks.Chat.Commands;
 using Chatiks.Chat.Data.EF;
 using Chatiks.Chat.Data.EF.Domain.Chat;
+using Chatiks.Chat.Domain;
 using Chatiks.Chat.Specifications;
 using Chatiks.Core.Managers;
 using Microsoft.EntityFrameworkCore;
@@ -11,11 +12,13 @@ public class ChatManager
 {
     private readonly ChatsRepository _chatsRepository;
     private readonly ImagesManager _imagesManager;
+    private readonly ChatDomainModelFactory _chatDomainModelFactory;
 
-    public ChatManager(ChatsRepository chatsRepository, ImagesManager imagesManager)
+    public ChatManager(ChatsRepository chatsRepository, ImagesManager imagesManager, ChatDomainModelFactory chatDomainModelFactory)
     {
         _chatsRepository = chatsRepository;
         _imagesManager = imagesManager;
+        _chatDomainModelFactory = chatDomainModelFactory;
     }
 
     public async Task AddUserToChatAsync(long inviterId, long userId, long chatId)
