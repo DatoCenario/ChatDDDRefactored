@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Chatiks.Core.Data.EF;
 using Chatiks.Tools.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -7,8 +8,11 @@ using SixLabors.ImageSharp.Processing;
 
 namespace Chatiks.Core.Domain;
 
-public class ImageDomainModel: UniqueDomainModelBase
+public class ImageDomainModel: UniqueDomainModelBase, IDisposable
 {
+    private static int MaxImageBytes = 12000;
+    private static Regex ReplaceImageHeaderReg = new Regex(@"^data:image\/(png|jpg);base64,");
+    
     private readonly Image _image;
     private readonly CoreContext _coreContext;
     
@@ -17,11 +21,26 @@ public class ImageDomainModel: UniqueDomainModelBase
     public int ImageHeight => _image.Height;
     public string Base64ImageText => _image.ToBase64String(PngFormat.Instance);
 
-    public ImageDomainModel(long? id, string base64imageText, CoreContext coreContext): base(id)
+    public ImageDomainModel(
+        long? id,
+        string base64imageText,
+        CoreContext coreContext): base(id)
     {
         _coreContext = coreContext;
+        
+        base64imageText = ReplaceImageHeaderReg.Replace(base64imageText, "");
         var imageBytes = Convert.FromBase64String(base64imageText);
         _image = SixLabors.ImageSharp.Image.Load(imageBytes, new PngDecoder());
+
+        if (!id.HasValue && imageBytes.Length > MaxImageBytes)
+        {
+            var delta = Math.Sqrt(imageBytes.Length / MaxImageBytes);
+            _image.Mutate(o => o.Resize(new Size
+            {
+                Width = (int)(_image.Width / delta),
+                Height = (int)(_image.Height / delta)
+            }));
+        }
     }
 
     public void Resize(int width, int height)
@@ -44,31 +63,16 @@ public class ImageDomainModel: UniqueDomainModelBase
     // method for deleting image
     public void Delete()
     {
-        Deleted = true;
-    }
-    
-    // method for executing image update
-    public async Task UpdateAsync()
-    {
         if (IsNew())
         {
-            // check that image with same base64 text is not exists
-            var imageExist = await _coreContext.Images
-                .AnyAsync(i => i.Base64Text == Base64ImageText);
+            throw new Exception("Image is not saved in database");
+        }
+        
+        Deleted = true;
+    }
 
-            if (!imageExist)
-            {
-                await _coreContext.Images.AddAsync(new Data.EF.Domain.Image
-                {
-                    Base64Text = Base64ImageText
-                });
-            }
-        }
-        else
-        {
-            await _coreContext.Images
-                .Where(i => i.Id == Id)
-                .ExecuteUpdateAsync(i => i.SetProperty(p => p.Base64Text, v => Base64ImageText));
-        }
+    public void Dispose()
+    {
+        _image.Dispose();
     }
 }

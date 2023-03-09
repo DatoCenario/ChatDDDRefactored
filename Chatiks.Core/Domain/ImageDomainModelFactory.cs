@@ -9,8 +9,7 @@ namespace Chatiks.Core.Domain;
 
 public class ImageDomainModelFactory
 {
-    private readonly int _maxImageBytes = 12000;
-    private readonly Regex _replaceImageHeaderReg = new Regex(@"^data:image\/(png|jpg);base64,");
+    
     
     private readonly CoreContext _coreContext;
 
@@ -26,23 +25,6 @@ public class ImageDomainModelFactory
     
     public ImageDomainModel CreateNew(string base64Text)
     {
-        base64Text = _replaceImageHeaderReg.Replace(base64Text, "");
-        var imageBytes = Convert.FromBase64String(base64Text);
-        if (imageBytes.Length > _maxImageBytes)
-        {
-            using (var image = SixLabors.ImageSharp.Image.Load(imageBytes, new PngDecoder()))
-            {
-                var delta = Math.Sqrt(imageBytes.Length / _maxImageBytes);
-                image.Mutate(o => o.Resize(new Size
-                {
-                    Width = (int)(image.Width / delta),
-                    Height = (int)(image.Height / delta)
-                }));
-                base64Text = image.ToBase64String(PngFormat.Instance);
-                base64Text = _replaceImageHeaderReg.Replace(base64Text, "");
-            }
-        }
-        
         return new ImageDomainModel(null, base64Text, _coreContext);
     }
 }
