@@ -10,6 +10,18 @@ public static class ContextExtensions
         return new IsolatedOperationScope<TContext>(context, saveChanges);
     }
     
+    public static async Task<ICollection<TEntity>> LoadBySpecificationAsync<TEntity>(this DbSet<TEntity> set, SpecificationBase<TEntity> specification) where TEntity: class
+    {
+        var query = set.AsNoTracking();
+
+        if (specification != null)
+        {
+            query = specification.Apply(query);
+        }
+
+        return await query.ToArrayAsync();
+    }
+    
     public static async Task<ICollection<TEntity>> LoadBySpecificationAsync<TEntity, TContext>(this TContext context, SpecificationBase<TEntity> specification) where TEntity: class where TContext: DbContext
     {
         var query = context.Set<TEntity>().AsNoTracking();

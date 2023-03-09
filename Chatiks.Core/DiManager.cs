@@ -13,6 +13,8 @@ public class DiManager: IDiManager
     
     public void Register(IServiceCollection services)
     {
+        services.AddScoped<>()
+        
         services.AddScoped<ImagesManager>(p =>
         {
             var configuration = p.GetService<IConfiguration>();
@@ -26,7 +28,7 @@ public class DiManager: IDiManager
                 context.Database.Migrate();
             }
             
-            return new ImagesManager(new CoreRepository(context));
+            return new ImagesManager(context);
         });
     }
 }

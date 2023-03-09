@@ -2,9 +2,9 @@ using Chatiks.Tools.Domain;
 
 namespace Chatiks.Chat.Domain;
 
-public class ChatDomainModel: IUniqueDomainModel<long>
+public class ChatDomainModel: UniqueDomainModelBase
 {
-    public ChatDomainModel(ICollection<ChatMessageDomainModel> messages)
+    public ChatDomainModel(long? id, ICollection<ChatMessageDomainModel> messages) : base(id)
     {
         Messages = messages;
     }

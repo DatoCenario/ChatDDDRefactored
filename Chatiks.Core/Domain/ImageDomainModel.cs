@@ -15,7 +15,7 @@ public class ImageDomainModel: UniqueDomainModelBase, IDisposable
     
     private readonly Image _image;
     private readonly CoreContext _coreContext;
-    
+
     public bool Deleted { get; private set; }
     public int ImageWidth => _image.Width;
     public int ImageHeight => _image.Height;
