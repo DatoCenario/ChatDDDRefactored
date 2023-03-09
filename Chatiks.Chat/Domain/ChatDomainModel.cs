@@ -23,11 +23,9 @@ public class ChatDomainModel: UniqueDomainModelBase
         var images = new List<ChatMessageImageDomainModel>();
         foreach (var imageBase64 in imagesBase64)
         {
-            images.Add(new ChatMessageImageDomainModel(imageBase64));
+            images.Add(new ChatMessageImageDomainModel(null, imageBase64));
         }
         
-        Messages.Add(new ChatMessageDomainModel(text, DateTime.Now, images));
+        Messages.Add(new ChatMessageDomainModel(null, text, DateTime.Now, images));
     }
-
-    public long Id { get; }
 }

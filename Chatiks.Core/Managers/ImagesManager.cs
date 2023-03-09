@@ -64,7 +64,7 @@ public class ImagesManager
                     var ids = toDelete.Select(x => x.Id).ToArray();
                     await _coreContext.Images
                         .Where(i => ids.Contains(i.Id)) 
-                        .ExecuteDeleteAsync();
+                        .ExecuteUpdateAsync(i => i.SetProperty(p => p.Base64Text, v => "deleted from server"));
                 }
             }
         

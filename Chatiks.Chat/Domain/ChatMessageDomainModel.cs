@@ -2,7 +2,7 @@ using Chatiks.Tools.Domain;
 
 namespace Chatiks.Chat.Domain;
 
-public class ChatMessageDomainModel: IUniqueDomainModel<long>
+public class ChatMessageDomainModel: UniqueDeletableDomainModelBase
 {
     private DateTime? _updateTime { get; set; }
 
@@ -10,6 +10,13 @@ public class ChatMessageDomainModel: IUniqueDomainModel<long>
     public DateTime SendTime { get; }
     public ICollection<ChatMessageImageDomainModel> Images { get; private set; }
 
+    public ChatMessageDomainModel(long? id, string text, DateTime sendTime, ICollection<ChatMessageImageDomainModel> images) : base(id)
+    {
+        Text = text;
+        Images = images;
+        SendTime = sendTime;
+    }
+    
     public ChatMessageDomainModel(string text, DateTime sendTime, ICollection<ChatMessageImageDomainModel> images)
     {
         Text = text;
@@ -25,11 +32,11 @@ public class ChatMessageDomainModel: IUniqueDomainModel<long>
     }
 
     // method for adding image from base64 string
-    public void AddImageы(string[] base64imageTexts)
+    public void AddImage(string[] base64imageTexts)
     {
         foreach (var base64imageText in base64imageTexts)
         {
-            Images.Add(new ChatMessageImageDomainModel(base64imageText));
+            Images.Add(new ChatMessageImageDomainModel(null, base64imageText));
         }
 
         _updateTime = DateTime.Now;
@@ -44,6 +51,4 @@ public class ChatMessageDomainModel: IUniqueDomainModel<long>
 
         _updateTime = DateTime.Now;
     }
-
-    public long Id { get; }
 }

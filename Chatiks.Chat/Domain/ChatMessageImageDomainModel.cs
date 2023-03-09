@@ -1,11 +1,13 @@
 using Chatiks.Tools.Domain;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Png;
-using SixLabors.ImageSharp.Processing;
 
 namespace Chatiks.Chat.Domain;
 
-public class ChatMessageImageDomainModel: IUniqueDomainModel<long>
+public class ChatMessageImageDomainModel: UniqueDeletableDomainModelBase
 {
-   
+   public ChatMessageImageDomainModel(long? id, string base64Text) : base(id)
+   {
+      Base64Text = base64Text;
+   }
+
+   public string Base64Text { get; set; }
 }

@@ -7,10 +7,38 @@ public abstract class UniqueDomainModelBase
         Id = id;
     }
 
+    protected UniqueDomainModelBase()
+    {
+        
+    }
+
     public long? Id { get; }
     
     public bool IsNew()
     {
         return Id == null;
+    }
+}
+
+public abstract class UniqueDeletableDomainModelBase: UniqueDomainModelBase
+{
+    protected UniqueDeletableDomainModelBase(long? id) : base(id)
+    {
+    }
+    
+    protected UniqueDeletableDomainModelBase()
+    {
+    }
+
+    public bool IsDeleted { get; private set; }
+    
+    public void Delete()
+    {
+        if (IsNew())
+        {
+            throw new Exception("Can't delete new entity");
+        }
+        
+        IsDeleted = true;
     }
 }

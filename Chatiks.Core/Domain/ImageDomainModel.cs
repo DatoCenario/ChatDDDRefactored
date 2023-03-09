@@ -1,14 +1,16 @@
 using System.Text.RegularExpressions;
 using Chatiks.Core.Data.EF;
+using Chatiks.Core.Data.EF.Domain;
 using Chatiks.Tools.Domain;
 using Microsoft.EntityFrameworkCore;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Processing;
+using Image = SixLabors.ImageSharp.Image;
 
 namespace Chatiks.Core.Domain;
 
-public class ImageDomainModel: UniqueDomainModelBase, IDisposable
+public class ImageDomainModel: UniqueDeletableDomainModelBase, IDisposable
 {
     private static int MaxImageBytes = 12000;
     private static Regex ReplaceImageHeaderReg = new Regex(@"^data:image\/(png|jpg);base64,");
@@ -58,17 +60,6 @@ public class ImageDomainModel: UniqueDomainModelBase, IDisposable
         }
         
         _image.Mutate(x => x.Resize(width, height));
-    }
-    
-    // method for deleting image
-    public void Delete()
-    {
-        if (IsNew())
-        {
-            throw new Exception("Image is not saved in database");
-        }
-        
-        Deleted = true;
     }
 
     public void Dispose()
