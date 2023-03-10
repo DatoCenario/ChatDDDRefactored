@@ -1,3 +1,4 @@
+using Chatiks.Tools;
 using Chatiks.Tools.Domain;
 
 namespace Chatiks.Chat.Domain;
@@ -6,16 +7,37 @@ public class ChatDomainModel: UniqueDeletableDomainModelBase
 {
     public string Name { get; private set; }
     public bool IsPrivate { get; private set; }
+    public long? OwnerId { get; private set; }
     public ICollection<ChatMessageDomainModel> Messages { get; private set; }
     public ICollection<ChatUserDomainModel> Users { get; private set; }
     public ImageLinkDomainModel ChatAvatar { get; private set; }
     
     
     public ChatDomainModel(
-        long? id, 
+        long? ownerId = null, long? id = null, string name = null,
         ICollection<ChatMessageDomainModel> messages = null,
-        ICollection<ChatUserDomainModel> users = null) : base(id)
+        ICollection<ChatUserDomainModel> users = null,
+        ImageLinkDomainModel chatAvatar = null) : base(id)
     {
+        var isPrivate = name == null;
+
+        if (isPrivate)
+        {
+            if (ownerId.HasValue)
+            {
+                throw new Exception("Can't create private chat with owner");
+            }
+
+            if (users.EmptyIfNull().Count > 2)
+            {
+                throw new Exception("Can't create private chat with more than 2 users");
+            }
+        }
+        
+        OwnerId = ownerId;
+        IsPrivate = isPrivate;
+        Name = name;
+        ChatAvatar = chatAvatar;
         Messages = messages;
         Users = users;
     }
@@ -32,6 +54,11 @@ public class ChatDomainModel: UniqueDeletableDomainModelBase
     {
         ThrowOperationExceptionIfDeleted();
         
+        if (IsPrivate)
+        {
+            throw new Exception("can't add user to private chat");
+        }
+
         Users.Add(new ChatUserDomainModel(userId, inviterId));
     }
     

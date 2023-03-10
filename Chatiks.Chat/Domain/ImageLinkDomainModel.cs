@@ -8,6 +8,11 @@ public class ImageLinkDomainModel: UniqueDeletableDomainModelBase
     {
         Base64Text = base64Text;
     }
+    
+    public ImageLinkDomainModel(string base64Text = null) : base()
+    {
+        Base64Text = base64Text;
+    }
 
     public long? ImageExternalId { get; private set; }
     public string Base64Text { get; set; }
