@@ -13,8 +13,7 @@ namespace Chatiks.Core.Domain;
 public class ImageDomainModel: UniqueDeletableDomainModelBase, IDisposable
 {
     private static int MaxImageBytes = 12000;
-    private static Regex ReplaceImageHeaderReg = new Regex(@"^data:image\/(png|jpg);base64,");
-    
+
     private readonly Image _image;
     private readonly CoreContext _coreContext;
 
@@ -30,9 +29,16 @@ public class ImageDomainModel: UniqueDeletableDomainModelBase, IDisposable
     {
         _coreContext = coreContext;
         
-        base64imageText = ReplaceImageHeaderReg.Replace(base64imageText, "");
         var imageBytes = Convert.FromBase64String(base64imageText);
-        _image = SixLabors.ImageSharp.Image.Load(imageBytes, new PngDecoder());
+
+        try
+        {
+            _image = SixLabors.ImageSharp.Image.Load(imageBytes, new PngDecoder());
+        }
+        catch (Exception e)
+        {
+            throw new Exception("Image is not valid format, please provide correct png image");
+        }
 
         if (!id.HasValue && imageBytes.Length > MaxImageBytes)
         {

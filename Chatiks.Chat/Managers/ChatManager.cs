@@ -56,24 +56,23 @@ public class ChatManager
         var toDelete = chats.Where(i => !i.IsNew() && i.IsDeleted).ToArray();
         var toCreate = chats.Where(i => i.IsNew()).ToArray();
 
+        var allNewImages = toCreate.Concat(toUpdate)
+            .SelectMany(c => c.Messages)
+            .SelectMany(m => m.Images)
+            .Where(i => i.IsNew())
+            .Select(x => x.Base64Text)
+            .ToArray();
+        
+        var newImages = (await _imagesManager.UploadNewImagesAsync(allNewImages))
+            .ToDictionary(k => k.Base64ImageText);
+
         using (var io = _chatContext.BeginIsolatedOperation())
         {
             if (toUpdate.Any())
             {
-                var chatsDtos = await  _chatContext.Chats.LoadBySpecificationAsync(
-                    new ChatSpecification(new ChatFilter()
-                    {
-                        Ids = toUpdate.Select(x => x.Id.Value).ToArray()
-                    }));
-                
                 foreach (var chat in toUpdate)
                 {
-                    var chatDto = chatsDtos.FirstOrDefault(i => i.Id == chat.Id);
-                    if (chatDto != null)
-                    {
-                        chatDto.Name = chat.IsPrivate ? null : chat.Name;
-                        resultDtoList.Add(chatDto);
-                    }
+                    resultDtoList.Add(UpdateOrCreateNewChat(chat));
                 }
             }
         
@@ -86,46 +85,55 @@ public class ChatManager
         
             if (toCreate.Any())
             {
-                var chatsDtos = new List<Data.EF.Domain.Chat.Chat>();
-
                 foreach (var chat in toCreate)
                 {
-                    long avatarId = 0;
-
-                    if (chat.ChatAvatar.IsNew())
-                    {
-                        var models = await _imagesManager.UploadNewImagesAsync(new List<string> {chat.ChatAvatar.Base64Text});
-                        avatarId = models.First().Id.Value;
-                    }
-
-                    var messagesDtos = new List<ChatMessage>();
-                    foreach(var mess in chat.Messages)
-                    {
-                        var imagesIds = await _imagesManager.UploadNewImagesAsync(mess.Images.Select(x => x.Base64Text).ToList());
-                        messagesDtos.Add(new ChatMessage()
-                        {
-                            ExternalOwnerId = mess.UserId,
-                            Text = mess.Text,
-                            MessageImageLinks = imagesIds.Select(x => new ChatMessageImageLink()
-                            {
-                                ExternalImageId = x.Id.Value
-                            }).ToList()
-                        });
-                    }
-
-                    chatsDtos.Add(new Data.EF.Domain.Chat.Chat()
-                    {
-                        Name = chat.IsPrivate ? null : chat.Name,
-                        IsPrivate = chat.IsPrivate,
-                        ExternalOwnerId = chat.OwnerId,
-                        ExternalAvatarid = avatarId,
-                        Messages = messagesDtos
-                    });
+                   resultDtoList.Add(UpdateOrCreateNewChat(chat));
                 }
             }
         
             await io.SaveChangesAsync();
         }
+
+        Data.EF.Domain.Chat.Chat UpdateOrCreateNewChat(ChatDomainModel chatDomainModel, Data.EF.Domain.Chat.Chat chat = null)
+        {
+            if (chat == null)
+            {
+                chat = new Data.EF.Domain.Chat.Chat();
+            }
+
+            chat.Name = chatDomainModel.IsPrivate ? null : chatDomainModel.Name;
+            chat.IsPrivate = chatDomainModel.IsPrivate;
+            chat.ExternalOwnerId = chatDomainModel.OwnerId;
+            chat.ExternalAvatarid = chatDomainModel.ChatAvatar.IsNew() ? newImages[chatDomainModel.ChatAvatar.Base64Text].Id.Value : chatDomainModel.ChatAvatar.ImageExternalId.Value;
+            chat.Messages = chatDomainModel.Messages.Select(m => UpdateOrCreateNewMessage(m)).ToList();
+            chat.ChatUsers = chatDomainModel.Users.Select(u => new ChatUser()
+            {
+                ExternalUserId = u.UserId,
+                ExternalInviterId = u.InviterId
+            }).ToList();
+
+            return chat;
+        }
+
+        ChatMessage UpdateOrCreateNewMessage(ChatMessageDomainModel messageDomainModel, ChatMessage message = null)
+        {
+            if (message == null)
+            {
+                message = new ChatMessage();
+            }
+
+            message.ExternalOwnerId = messageDomainModel.UserId;
+            message.Text = messageDomainModel.Text;
+            message.MessageImageLinks = messageDomainModel.Images
+                .Select(x => new ChatMessageImageLink()
+                {
+                    ExternalImageId = x.IsNew() ? newImages[x.Base64Text].Id.Value : x.ImageExternalId.Value
+                }).ToList();
+
+            return message;
+        }
+
+        return resultDtoList.Select(c => _chatDomainModelFactory.CreateFromChat(c)).ToArray();
     }
 
     public async Task<ICollection<ChatDomainModel>> LoadChatsBySpecificationAsync(ChatSpecification specification)
