@@ -32,6 +32,11 @@ public class ChatDomainModel: UniqueDeletableDomainModelBase
             {
                 throw new Exception("Can't create private chat with more than 2 users");
             }
+
+            if (chatAvatar != null)
+            {
+                throw new Exception("Can't create private chat with avatar");
+            }
         }
         
         OwnerId = ownerId;
@@ -77,6 +82,11 @@ public class ChatDomainModel: UniqueDeletableDomainModelBase
     public void ChangeAvatar(string base64Text)
     {
         ThrowOperationExceptionIfDeleted();
+
+        if (IsPrivate)
+        {
+            throw new Exception("Can't change avatar of private chat");
+        }
         
         ChatAvatar = new ImageLinkDomainModel(null, base64Text);
     }
