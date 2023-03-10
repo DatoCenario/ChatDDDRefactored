@@ -18,7 +18,7 @@ public class ImageDomainModel: UniqueDeletableDomainModelBase, IDisposable
     private readonly Image _image;
     private readonly CoreContext _coreContext;
 
-    public bool Deleted { get; private set; }
+
     public int ImageWidth => _image.Width;
     public int ImageHeight => _image.Height;
     public string Base64ImageText => _image.ToBase64String(PngFormat.Instance);

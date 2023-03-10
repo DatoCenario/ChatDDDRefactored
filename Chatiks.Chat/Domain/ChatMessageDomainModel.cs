@@ -25,7 +25,12 @@ public class ChatMessageDomainModel: UniqueDeletableDomainModelBase
         SendTime = sendTime;
     }
 
-    public ChatMessageDomainModel(long? id, string text, DateTime sendTime, long userId, ICollection<ChatMessageImageDomainModel> images) : base(id)
+    public ChatMessageDomainModel(
+        long? id,
+        string text,
+        DateTime sendTime,
+        long userId,
+        ICollection<ChatMessageImageDomainModel> images) : base(id)
     {
         // validate that message not empty
         if (string.IsNullOrEmpty(text) && (images == null || images.Count == 0))
@@ -39,7 +44,11 @@ public class ChatMessageDomainModel: UniqueDeletableDomainModelBase
         SendTime = sendTime;
     }
     
-    public ChatMessageDomainModel(string text, DateTime sendTime, long userId, ICollection<ChatMessageImageDomainModel> images)
+    public ChatMessageDomainModel(
+        string text,
+        long userId,
+        DateTime sendTime,
+        ICollection<ChatMessageImageDomainModel> images)
     {
         // validate that message not empty
         if (string.IsNullOrEmpty(text) && (images == null || images.Count == 0))
@@ -56,6 +65,8 @@ public class ChatMessageDomainModel: UniqueDeletableDomainModelBase
     // method for editing text
     public void EditText(string text)
     {
+        ThrowOperationExceptionIfDeleted();
+        
         Text = text;
         _updateTime = DateTime.Now;
     }
@@ -63,6 +74,8 @@ public class ChatMessageDomainModel: UniqueDeletableDomainModelBase
     // method for adding image from base64 string
     public void AddImage(string[] base64imageTexts)
     {
+        ThrowOperationExceptionIfDeleted();
+        
         foreach (var base64imageText in base64imageTexts)
         {
             Images.Add(new ChatMessageImageDomainModel(null, base64imageText));
@@ -73,11 +86,21 @@ public class ChatMessageDomainModel: UniqueDeletableDomainModelBase
 
     public void DeleteAllImages()
     {
+        ThrowOperationExceptionIfDeleted();
+        
         foreach (var image in Images)
         {
             image.Delete();
         }
 
         _updateTime = DateTime.Now;
+    }
+    
+    public void ThrowOperationExceptionIfDeleted()
+    {
+        if (IsDeleted)
+        {
+            throw new Exception("Can't operate with deleted message");
+        }
     }
 }

@@ -4,54 +4,125 @@ using Chatiks.Chat.Data.EF.Domain.Chat;
 using Chatiks.Chat.Domain;
 using Chatiks.Chat.Specifications;
 using Chatiks.Core.Managers;
-using Microsoft.EntityFrameworkCore;
+using Chatiks.Tools.EF;
 
 namespace Chatiks.Chat.Managers;
 
 public class ChatManager
 {
-    private readonly ChatsRepository _chatsRepository;
+    private readonly ChatContext _chatContext;
     private readonly ImagesManager _imagesManager;
     private readonly ChatDomainModelFactory _chatDomainModelFactory;
 
-    public ChatManager(ChatsRepository chatsRepository, ImagesManager imagesManager, ChatDomainModelFactory chatDomainModelFactory)
+    public ChatManager(ImagesManager imagesManager, ChatDomainModelFactory chatDomainModelFactory, ChatContext chatContext)
     {
-        _chatsRepository = chatsRepository;
         _imagesManager = imagesManager;
         _chatDomainModelFactory = chatDomainModelFactory;
+        _chatContext = chatContext;
     }
 
     public async Task AddUserToChatAsync(long inviterId, long userId, long chatId)
     {
-        using (var isolatedOperation = _chatsRepository.BeginIsolatedOperation())
+        using (var isolatedOperation = _chatContext.BeginIsolatedOperation())
         {
             var chatSpecification = new ChatSpecification(new ChatFilter(new []{chatId}));
             chatSpecification.IncludeMessages();
             chatSpecification.IncludeChatUsers();
 
-            var chat = await _chatsRepository.LoadChatBySpecificationAsync(chatSpecification);
+            var chat = await LoadChatBySpecificationAsync(chatSpecification);
 
-            if (chat == null)
-            {
-                throw new Exception("Chat not found");
-            }
-
-            if (chat.ChatUsers.All(u => u.ExternalUserId != inviterId))
+            if (chat.Users.All(u => u.InviterId != inviterId))
             {
                 throw new Exception("Inviter not in chat");
             }
-
-            var addCommand = new AddChatUserCommand
+            
+            if (chat.Users.Any(u => u.UserId == userId))
             {
-                ChatId = chatId,
-                InviterId = inviterId,
-                UserId = userId
-            };
-
-            await _chatsRepository.AddNewChatUserAsync(addCommand);
+                throw new Exception("User already in chat");
+            }
+            
+            chat.AddUser(userId, inviterId);
 
             await isolatedOperation.SaveChangesAsync();
         }
+    }
+
+    public async Task<ICollection<ChatDomainModel>> UpdateChatsAsync(ICollection<ChatDomainModel> chats)
+    {
+        var resultDtoList = new List<Data.EF.Domain.Chat.Chat>();
+        
+        var toUpdate = chats.Where(i => !i.IsNew() && !i.IsDeleted).ToArray();
+        var toDelete = chats.Where(i => !i.IsNew() && i.IsDeleted).ToArray();
+        var toCreate = chats.Where(i => i.IsNew()).ToArray();
+
+        using (var io = _chatContext.BeginIsolatedOperation())
+        {
+            if (toUpdate.Any())
+            {
+                var chatsDtos = await  _chatContext.Chats.LoadBySpecificationAsync(
+                    new ChatSpecification(new ChatFilter()
+                    {
+                        Ids = toUpdate.Select(x => x.Id.Value).ToArray()
+                    }));
+                
+                foreach (var chat in toUpdate)
+                {
+                    var chatDto = chatsDtos.FirstOrDefault(i => i.Id == chat.Id);
+                    if (chatDto != null)
+                    {
+                        chatDto.Name = chat.Name;
+                        resultDtoList.Add(chatDto);
+                    }
+                }
+            }
+        
+            if (toDelete.Any())
+            {
+                var chatsDtos = await  _chatContext.Chats.LoadBySpecificationAsync(
+                    new ChatsSpecification(new ChatsFilter()
+                    {
+                        Ids = toDelete.Select(x => x.Id.Value).ToArray()
+                    }));
+                
+                foreach (var chat in toDelete)
+                {
+                    var chatDto = chatsDtos.FirstOrDefault(i => i.Id == chat.Id);
+                    if (chatDto != null)
+                    {
+                        chatDto.IsDeleted = true;
+                        resultDtoList.Add(chatDto);
+                    }
+                }
+            }
+        
+            if (toCreate.Any())
+            {
+                var chatsDtos = toCreate.Select(x => _chatDomainModelFactory.CreateFromChatDomainModel(x)).ToList();
+                await _chatContext.Chats.AddRangeAsync(chatsDtos);
+                resultDtoList.AddRange(chatsDtos);
+            }
+        
+            await io.SaveChangesAsync();
+        }
+    }
+
+    public async Task<ICollection<ChatDomainModel>> LoadChatsBySpecificationAsync(ChatSpecification specification)
+    {
+        var chats = await _chatContext.Chats.LoadBySpecificationAsync(specification);
+
+        return chats.Select(c => _chatDomainModelFactory.CreateFromChat(c)).ToList();
+    }
+    
+    public async Task<ChatDomainModel> LoadChatBySpecificationAsync(ChatSpecification specification)
+    {
+        var chat = await _chatContext.Chats.FirstOrDefaultBySpecificationAsync(specification);
+        
+        if (chat == null)
+        {
+            throw new Exception("Chat not found");
+        }
+
+        return _chatDomainModelFactory.CreateFromChat(chat);
     }
 
     public async Task<long> SendMessageToChatAsync(

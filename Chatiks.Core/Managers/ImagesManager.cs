@@ -32,8 +32,8 @@ public class ImagesManager
     {
         var resultDtoList = new List<Image>();
         
-        var toUpdate = images.Where(i => !i.IsNew() && !i.Deleted).ToArray();
-        var toDelete = images.Where(i => !i.IsNew() && i.Deleted).ToArray();
+        var toUpdate = images.Where(i => !i.IsNew() && !i.IsDeleted).ToArray();
+        var toDelete = images.Where(i => !i.IsNew() && i.IsDeleted).ToArray();
         var toCreate = images.Where(i => i.IsNew()).ToArray();
 
         using (var io = _coreContext.BeginIsolatedOperation())
