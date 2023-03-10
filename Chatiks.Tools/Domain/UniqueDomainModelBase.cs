@@ -41,4 +41,12 @@ public abstract class UniqueDeletableDomainModelBase: UniqueDomainModelBase
         
         IsDeleted = true;
     }
+    
+    public void ThrowOperationExceptionIfDeleted()
+    {
+        if (IsDeleted)
+        {
+            throw new Exception("Can't operate with deleted entity");
+        }
+    }
 }

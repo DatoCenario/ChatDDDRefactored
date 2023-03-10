@@ -1,3 +1,4 @@
+using Chatiks.Chat.Data.EF.Domain.Chat;
 using Chatiks.Tools.Domain;
 
 namespace Chatiks.Chat.Domain;
@@ -94,13 +95,5 @@ public class ChatMessageDomainModel: UniqueDeletableDomainModelBase
         }
 
         _updateTime = DateTime.Now;
-    }
-    
-    public void ThrowOperationExceptionIfDeleted()
-    {
-        if (IsDeleted)
-        {
-            throw new Exception("Can't operate with deleted message");
-        }
     }
 }

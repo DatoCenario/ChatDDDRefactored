@@ -38,6 +38,17 @@ public class ChatDomainModel: UniqueDeletableDomainModelBase
                 throw new Exception("Can't create private chat with avatar");
             }
         }
+        else
+        {
+            if (name == null)
+            {
+                throw new Exception("Can't create group chat without name");
+            }
+            if (ownerId == null)
+            {
+                throw new Exception("Can't create group chat without owner");
+            }
+        }
         
         OwnerId = ownerId;
         IsPrivate = isPrivate;
@@ -89,13 +100,5 @@ public class ChatDomainModel: UniqueDeletableDomainModelBase
         }
         
         ChatAvatar = new ImageLinkDomainModel(null, base64Text);
-    }
-    
-    public void ThrowOperationExceptionIfDeleted()
-    {
-        if (IsDeleted)
-        {
-            throw new Exception("Can't operate with deleted chat");
-        }
     }
 }

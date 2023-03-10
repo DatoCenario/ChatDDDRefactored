@@ -20,7 +20,7 @@ public class ChatDomainModelFactory
         }
         
         return new ChatDomainModel(
-            ownerId: chat.OwnerId,
+            ownerId: chat.ExternalOwnerId,
             id: chat.Id,
             messages: chat.Messages.EmptyIfNull().Select(CreateFromMessage).ToList(),
             users: chat.ChatUsers.EmptyIfNull().Select(CreateFromChatUser).ToList());

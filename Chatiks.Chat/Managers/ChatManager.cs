@@ -5,6 +5,7 @@ using Chatiks.Chat.Domain;
 using Chatiks.Chat.Specifications;
 using Chatiks.Core.Managers;
 using Chatiks.Tools.EF;
+using Microsoft.EntityFrameworkCore;
 
 namespace Chatiks.Chat.Managers;
 
@@ -70,7 +71,7 @@ public class ChatManager
                     var chatDto = chatsDtos.FirstOrDefault(i => i.Id == chat.Id);
                     if (chatDto != null)
                     {
-                        chatDto.Name = chat.Name;
+                        chatDto.Name = chat.IsPrivate ? null : chat.Name;
                         resultDtoList.Add(chatDto);
                     }
                 }
@@ -78,28 +79,49 @@ public class ChatManager
         
             if (toDelete.Any())
             {
-                var chatsDtos = await  _chatContext.Chats.LoadBySpecificationAsync(
-                    new ChatsSpecification(new ChatsFilter()
-                    {
-                        Ids = toDelete.Select(x => x.Id.Value).ToArray()
-                    }));
-                
-                foreach (var chat in toDelete)
-                {
-                    var chatDto = chatsDtos.FirstOrDefault(i => i.Id == chat.Id);
-                    if (chatDto != null)
-                    {
-                        chatDto.IsDeleted = true;
-                        resultDtoList.Add(chatDto);
-                    }
-                }
+                var deleteIds = toDelete.Select(x => x.Id.Value).ToArray();
+                await _chatContext.Chats.Where(x => deleteIds.Contains(x.Id))
+                    .ExecuteDeleteAsync();
             }
         
             if (toCreate.Any())
             {
-                var chatsDtos = toCreate.Select(x => _chatDomainModelFactory.CreateFromChatDomainModel(x)).ToList();
-                await _chatContext.Chats.AddRangeAsync(chatsDtos);
-                resultDtoList.AddRange(chatsDtos);
+                var chatsDtos = new List<Data.EF.Domain.Chat.Chat>();
+
+                foreach (var chat in toCreate)
+                {
+                    long avatarId = 0;
+
+                    if (chat.ChatAvatar.IsNew())
+                    {
+                        var models = await _imagesManager.UploadNewImagesAsync(new List<string> {chat.ChatAvatar.Base64Text});
+                        avatarId = models.First().Id.Value;
+                    }
+
+                    var messagesDtos = new List<ChatMessage>();
+                    foreach(var mess in chat.Messages)
+                    {
+                        var imagesIds = await _imagesManager.UploadNewImagesAsync(mess.Images.Select(x => x.Base64Text).ToList());
+                        messagesDtos.Add(new ChatMessage()
+                        {
+                            ExternalOwnerId = mess.UserId,
+                            Text = mess.Text,
+                            MessageImageLinks = imagesIds.Select(x => new ChatMessageImageLink()
+                            {
+                                ExternalImageId = x.Id.Value
+                            }).ToList()
+                        });
+                    }
+
+                    chatsDtos.Add(new Data.EF.Domain.Chat.Chat()
+                    {
+                        Name = chat.IsPrivate ? null : chat.Name,
+                        IsPrivate = chat.IsPrivate,
+                        ExternalOwnerId = chat.OwnerId,
+                        ExternalAvatarid = avatarId,
+                        Messages = messagesDtos
+                    });
+                }
             }
         
             await io.SaveChangesAsync();
