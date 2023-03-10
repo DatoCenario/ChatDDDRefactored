@@ -162,35 +162,12 @@ public class ChatManager
         params string[]? imagesBase64)
     {
         imagesBase64 ??= Array.Empty<string>();
+        
+        var chat = await LoadChatBySpecificationAsync(new ChatSpecification(new ChatFilter(new []{chatId})));
+        
+        chat.SendMessage(text, userId, imagesBase64);
 
-        var imagesIds = await _imagesManager.UploadNewImagesAsync(imagesBase64);
-
-        using (var io = _chatsRepository.BeginIsolatedOperation())
-        {
-            var spec = new ChatSpecification(new ChatFilter(new [] {chatId}));
-            spec.IncludeChatUsers(new ChatUserFilter()
-            {
-                UserId = userId
-            });
-            
-            var chat = await _chatsRepository.LoadChatBySpecificationAsync(spec);
-
-            if (chat == null)
-            {
-                throw new Exception("Chat not found");
-            }
-
-            if (chat.ChatUsers.All(u => u.ExternalUserId != userId))
-            {
-                throw new Exception("User not in chat");
-            }
-
-            var command = new SendMessageToChatCommand(userId, chatId, text, DateTime.Now, imagesIds);
-
-            var entry = await _chatsRepository.SendMessageToChatAsync(command);
-            await _chatsRepository.SaveChangesAsync();
-            return entry.Entity.Id;
-        }
+        await UpdateChatsAsync(new List<ChatDomainModel> { chat });
     }
 
     public Task<long> CreateNewPrivateChatAsync(long userId, long otherId)
