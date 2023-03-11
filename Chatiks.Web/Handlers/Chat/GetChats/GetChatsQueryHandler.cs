@@ -35,7 +35,7 @@ public class GetChatsQueryHandler: IRequestHandler<GetChatsRequest, ICollection<
         });
         spec.IncludeLastMessages();
         spec.IncludeChatUsers();
-        var chats = await _chatManager.GetChats(spec);
+        var chats = await _chatManager.LoadChatsBySpecificationAsync(spec);
 
         foreach (var chat in chats)
         {
@@ -44,10 +44,10 @@ public class GetChatsQueryHandler: IRequestHandler<GetChatsRequest, ICollection<
             
             if (string.IsNullOrEmpty(chat.Name))
             {
-                var other = chat.ChatUsers.FirstOrDefault(c => c.ExternalUserId != me.Id);
+                var other = chat.Users.FirstOrDefault(c => c.UserId != me.Id);
                 if (other != null)
                 {
-                    var otherUser = await _userManager.FindByIdAsync(other.ExternalUserId.ToString());
+                    var otherUser = await _userManager.FindByIdAsync(other.UserId.ToString());
                     chatData.Name = otherUser.FullName;
                 }
                 else
@@ -59,7 +59,7 @@ public class GetChatsQueryHandler: IRequestHandler<GetChatsRequest, ICollection<
             var lastMess = chat.Messages.LastOrDefault();
             if (lastMess != null)
             {
-                var lastMessageOwner = await _userManager.FindByIdAsync(lastMess.ExternalOwnerId.ToString());
+                var lastMessageOwner = await _userManager.FindByIdAsync(lastMess.UserId.ToString());
                 chatData.LastMessage = lastMess.Text;
                 chatData.LastMessageSender = lastMessageOwner.FullName;
                 chatData.LastMessageSendTime = lastMess.SendTime.ToShortDateString();

@@ -37,8 +37,8 @@ public class GetUsersHandler: IRequestHandler<GetUsersRequest, GetUsersResponse>
         {
             var spec = new ChatSpecification(new ChatFilter(request.ChatIdFilter));
             spec.IncludeChatUsers();
-            var chats = await _chatManager.GetChats(spec);
-            var userIdsFromChats = chats.SelectMany(c => c.ChatUsers.Select(y => y.ExternalUserId)).ToArray();
+            var chats = await _chatManager.LoadChatsBySpecificationAsync(spec);
+            var userIdsFromChats = chats.SelectMany(c => c.Users.Select(y => y.UserId)).ToArray();
             
             usersQuery = usersQuery
                 .Where(u => userIdsFromChats.Contains(u.Id));
@@ -71,9 +71,9 @@ public class GetUsersHandler: IRequestHandler<GetUsersRequest, GetUsersResponse>
                 HasUserIds = new []{me.Id}
             });
             spec.IncludeChatUsers();
-            var myChats = await _chatManager.GetChats(spec);
+            var myChats = await _chatManager.LoadChatsBySpecificationAsync(spec);
             var excludeUsers = myChats
-                .SelectMany(c => c.ChatUsers.Select(u => u.ExternalUserId))
+                .SelectMany(c => c.Users.Select(u => u.UserId))
                 .ToArray();
 
             usersQuery = usersQuery

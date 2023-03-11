@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Chatiks.Chat.Commands;
 using Chatiks.Chat.Data.EF;
 using Chatiks.Chat.Data.EF.Domain.Chat;
@@ -189,6 +190,8 @@ public class ChatManager
     
     public Task<ChatDomainModel> CreateGroupChatAsync(long creatorId, string name, params long[] userIds)
     {
+        userIds = userIds.Where(x => x != creatorId).ToArray();
+        
         var chat = _chatDomainModelFactory.CreateNewChat(
             creatorId: creatorId,
             name: name);
@@ -208,5 +211,11 @@ public class ChatManager
     {
         var chat = await LoadChatBySpecificationAsync(new ChatSpecification(new ChatFilter(new []{chatId})));
         chat.DeleteUserFromChat(userId, inviterId);
+    }
+    
+    public async Task<bool> IsUserInChat(long userId, long chatId)
+    {
+        var chat = await LoadChatBySpecificationAsync(new ChatSpecification(new ChatFilter(new []{chatId})));
+        return chat.IsUserInChat(userId);
     }
 }

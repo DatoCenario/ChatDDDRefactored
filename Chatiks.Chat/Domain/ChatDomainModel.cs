@@ -69,11 +69,11 @@ public class ChatDomainModel: UniqueDeletableDomainModelBase
     }
 
 
-    public void SendMessage(string text, long userId, ICollection<string> imagesBase64)
+    public void SendMessage(string text, long userId, ICollection<string> imagesBase64 = null)
     {
         ThrowOperationExceptionIfDeleted();
         
-        Messages.Add(new ChatMessageDomainModel(null, text, DateTime.Now, userId, imagesBase64));
+        Messages.Add(new ChatMessageDomainModel(null, text, DateTime.Now, userId, imagesBase64.EmptyIfNull()));
     }
     
     public void AddUsers(ICollection<long> userIds, long? inviterId)
@@ -148,6 +148,11 @@ public class ChatDomainModel: UniqueDeletableDomainModelBase
             throw new Exception("user not found");
         }
 
+        if (user.IsDeleted)
+        {
+            throw new Exception("user already removed from chat");
+        }
+
         if (user.InviterId != inviterId)
         {
             throw new Exception("user can't be removed from chat by this user");
@@ -178,5 +183,10 @@ public class ChatDomainModel: UniqueDeletableDomainModelBase
         }
         
         ChatAvatar = new ImageLinkDomainModel(null, base64Text);
+    }
+    
+    public bool IsUserInChat(long userId)
+    {
+        return Users.NotDeleted().Any(u => u.UserId == userId);
     }
 }

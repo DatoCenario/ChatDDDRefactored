@@ -23,11 +23,11 @@ public class ChatMutations
         {
             var user = await userManager.FindByNameAsync(contextAccessor.HttpContext.User.Identity.Name);
 
-            var id = await chatManager.CreateNewChatAsync(user.Id, null, name);
+            var chat = await chatManager.CreateGroupChatAsync(user.Id, name, new[] { user.Id });
 
             return new CreateChatResponse()
             {
-                ChatId = id,
+                ChatId = chat.Id.Value,
                 ChatUsers = new[] { user }.Select(u => u.Adapt<CreateChatChatUserResponse>()).ToArray()
             };
         }
@@ -41,11 +41,11 @@ public class ChatMutations
             var user = await userManager.FindByNameAsync(contextAccessor.HttpContext.User.Identity.Name);
             var other = await userManager.FindByIdAsync(otherUserId.ToString());
 
-            var id = await chatManager.CreateNewPrivateChatAsync(user.Id, other.Id);
+            var chat = await chatManager.CreateNewPrivateChatAsync(user.Id, other.Id);
 
             return new CreateChatResponse()
             {
-                ChatId = id,
+                ChatId = chat.Id.Value,
                 ChatUsers = new[] { user, other }.Select(u => u.Adapt<CreateChatChatUserResponse>()).ToArray()
             };
         }
@@ -59,19 +59,17 @@ public class ChatMutations
             string text)
         {
             var user = await userManager.FindByNameAsync(contextAccessor.HttpContext.User.Identity.Name);
-
-            var messId = await chatManager.SendMessageToChatAsync(user.Id, chatId, text);
             
             var spec = new ChatSpecification(new ChatFilter(new []{chatId}));
             spec.IncludeChatUsers();
-            spec.IncludeMessages(new MessageFilter()
+            var chat = await chatManager.LoadChatBySpecificationAsync(spec);
+            chat.SendMessage(text, user.Id, null);
+            chat = await chatManager.UpdateChatAsync(chat);
+            var mess = chat.Messages.Last();
+
+            var images = await imagesManager.LoadBySpecificationAsync(new ImagesSpecification(new ImagesFilter()
             {
-                Id = messId
-            });
-            var chat = await chatManager.GetChat(spec);
-            var images = await imagesManager.GetImages(new ImagesSpecification(new ImagesFilter()
-            {
-                Ids = chat.Messages.First().MessageImageLinks.Select(i => i.ExternalImageId).ToArray()
+                Ids = chat.Messages.First().Images.Select(i => i.ImageExternalId.Value).ToArray()
             }));
 
             return new SendMessageToChatResponse()
@@ -79,12 +77,12 @@ public class ChatMutations
                 ChatId = chatId,
                 Text = text,
                 IsMe = true,
-                MessageId = messId,
+                MessageId = mess.Id.Value,
                 SenderName = user.FullName,
                 SendTime = DateTime.Now,
                 Images = images.Select(i => new SendMessageToChatImageResponse
                 {
-                    Base64String = i.Base64Text
+                    Base64String = i.Base64ImageText
                 }).ToArray()
             };
         }
