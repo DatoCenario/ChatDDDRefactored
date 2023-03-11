@@ -113,7 +113,7 @@ public class ChatManager
             chat.Name = chatDomainModel.IsPrivate ? null : chatDomainModel.Name;
             chat.IsPrivate = chatDomainModel.IsPrivate;
             chat.ExternalOwnerId = chatDomainModel.CreatorId;
-            chat.ExternalAvatarid = chatDomainModel.ChatAvatar.IsNew() ? newImages[chatDomainModel.ChatAvatar.Base64Text].Id.Value : chatDomainModel.ChatAvatar.ImageExternalId.Value;
+            chat.ExternalAvatarid =chatDomainModel.ChatAvatar == null ? null : chatDomainModel.ChatAvatar.IsNew() ? newImages[chatDomainModel.ChatAvatar.Base64Text].Id.Value : chatDomainModel.ChatAvatar.ImageExternalId.Value;
             chat.Messages = chatDomainModel.Messages.Select(m => UpdateOrCreateNewMessage(m)).ToList();
             chat.ChatUsers = chatDomainModel.Users.Select(u => new ChatUser()
             {

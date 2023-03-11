@@ -20,6 +20,7 @@ public class ChatDomainModel: UniqueDeletableDomainModelBase
         ImageLinkDomainModel chatAvatar = null) : base(id)
     {
         users ??= new List<ChatUserDomainModel>();
+        messages ??= new List<ChatMessageDomainModel>();
 
         var isPrivate = name == null;
 
