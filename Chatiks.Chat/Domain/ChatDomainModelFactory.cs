@@ -20,7 +20,7 @@ public class ChatDomainModelFactory
         }
         
         return new ChatDomainModel(
-            ownerId: chat.ExternalOwnerId,
+            creatorId: chat.ExternalOwnerId,
             id: chat.Id,
             messages: chat.Messages.EmptyIfNull().Select(CreateFromMessage).ToList(),
             users: chat.ChatUsers.EmptyIfNull().Select(CreateFromChatUser).ToList());
@@ -41,9 +41,13 @@ public class ChatDomainModelFactory
         return new ChatMessageImageDomainModel(imageLink.ExternalImageId);
     }
     
-    public ChatDomainModel CreateNewChat(string name, long userId)
+    public ChatDomainModel CreateNewChat(long? id = null, long? creatorId = null, string name = null,
+        long? privateChatUser1 = null, long? privateChatUser2 = null,
+        ICollection<ChatMessageDomainModel> messages = null,
+        ICollection<ChatUserDomainModel> users = null,
+        ImageLinkDomainModel chatAvatar = null)
     {
-        return new ChatDomainModel(ownerId: userId, name: name);
+        return new ChatDomainModel(creatorId, id, name, privateChatUser1, privateChatUser2, messages, users, chatAvatar);
     }
     
     public ChatMessageDomainModel CreateNewMessage(long userId, string text = null, ICollection<string> imagesBase64 = null)

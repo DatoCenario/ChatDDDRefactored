@@ -47,6 +47,14 @@ public class ChatManager
             await isolatedOperation.SaveChangesAsync();
         }
     }
+    
+    public async Task<ChatDomainModel> UpdateChatAsync(ChatDomainModel chat)
+    {
+        return (await UpdateChatsAsync(new List<ChatDomainModel>
+        {
+            chat
+        })).First();
+    }
 
     public async Task<ICollection<ChatDomainModel>> UpdateChatsAsync(ICollection<ChatDomainModel> chats)
     {
@@ -103,7 +111,7 @@ public class ChatManager
 
             chat.Name = chatDomainModel.IsPrivate ? null : chatDomainModel.Name;
             chat.IsPrivate = chatDomainModel.IsPrivate;
-            chat.ExternalOwnerId = chatDomainModel.OwnerId;
+            chat.ExternalOwnerId = chatDomainModel.CreatorId;
             chat.ExternalAvatarid = chatDomainModel.ChatAvatar.IsNew() ? newImages[chatDomainModel.ChatAvatar.Base64Text].Id.Value : chatDomainModel.ChatAvatar.ImageExternalId.Value;
             chat.Messages = chatDomainModel.Messages.Select(m => UpdateOrCreateNewMessage(m)).ToList();
             chat.ChatUsers = chatDomainModel.Users.Select(u => new ChatUser()
@@ -155,7 +163,7 @@ public class ChatManager
         return _chatDomainModelFactory.CreateFromChat(chat);
     }
 
-    public async Task<long> SendMessageToChatAsync(
+    public async Task<ChatMessageDomainModel> SendMessageToChatAsync(
         long userId,
         long chatId,
         string text = null,
@@ -167,85 +175,38 @@ public class ChatManager
         
         chat.SendMessage(text, userId, imagesBase64);
 
-        await UpdateChatsAsync(new List<ChatDomainModel> { chat });
-    }
-
-    public Task<long> CreateNewPrivateChatAsync(long userId, long otherId)
-    {
-        return CreateNewChatAsync(userId, new List<long> { otherId }, null, true);
-    }
-
-    public async Task<long> CreateNewChatAsync(
-        long creatorId,
-        ICollection<long> userIds,
-        string name,
-        bool privateChat = false)
-    {
-        userIds ??= new List<long>();
-        userIds = userIds.Union(new[] { creatorId }).ToArray();
+        chat = (await UpdateChatsAsync(new List<ChatDomainModel> { chat })).First();
         
-        using (var io = _chatsRepository.BeginIsolatedOperation())
-        {
-            var entry = await _chatsRepository.CreateChatAsync(new CreateNewChatCommand(creatorId,
-                userIds, name, privateChat));
+        return chat.Messages.Last();
+    }
 
-            await _chatsRepository.SaveChangesAsync();
-            return entry.Entity.Id;
-        }
+    public Task<ChatDomainModel> CreateNewPrivateChatAsync(long userId, long otherId)
+    {
+        var chat = _chatDomainModelFactory.CreateNewChat(privateChatUser1: userId, privateChatUser2: otherId);
+        
+        return UpdateChatsAsync(new List<ChatDomainModel> { chat }).ContinueWith(t => t.Result.First());
     }
     
+    public Task<ChatDomainModel> CreateGroupChatAsync(long creatorId, string name, params long[] userIds)
+    {
+        var chat = _chatDomainModelFactory.CreateNewChat(
+            creatorId: creatorId,
+            name: name);
+        
+        chat.AddUsers(userIds, creatorId);
+        
+        return UpdateChatsAsync(new List<ChatDomainModel> { chat }).ContinueWith(t => t.Result.First());
+    }
+
     public async Task LeaveChat(long userId, long chatId)
     {
-        using (var io = _chatsRepository.BeginIsolatedOperation())
-        {
-            await _chatsRepository.RemoveUserFromChat(new RemoveUserFromChatCommand(chatId, userId));
-        }
-    }
-
-    public Task<Data.EF.Domain.Chat.Chat> GetChat(ChatSpecification specification)
-    {
-        using (var io = _chatsRepository.BeginIsolatedOperation())
-        {
-            return _chatsRepository.LoadChatBySpecificationAsync(specification);
-        }
-    }
-
-    public Task<ICollection<Data.EF.Domain.Chat.Chat>> GetChats(ChatSpecification specification)
-    {
-        using (var io = _chatsRepository.BeginIsolatedOperation())
-        {
-            return _chatsRepository.LoadChatsBySpecificationAsync(specification);
-        }
+        var chat = await LoadChatBySpecificationAsync(new ChatSpecification(new ChatFilter(new []{chatId})));
+        chat.LeaveChat(userId);
     }
     
-    public async Task<ICollection<ChatMessage>> GetMessagesAsync(MessageSpecification specification = null)
+    public async Task DeleteUserFromChat(long inviterId, long userId, long chatId)
     {
-        using (var io = _chatsRepository.BeginIsolatedOperation())
-        {
-            var query = _chatsRepository.ChatMessages.AsNoTracking();
-            query = specification == null ? query : specification.Apply(query);
-            return await query.ToArrayAsync();
-        }
-    }
-
-    public Task<int> GetMessagesCountAsync(MessageFilter messageFilter)
-    {
-        using (var io = _chatsRepository.BeginIsolatedOperation())
-        { 
-            return _chatsRepository.ChatMessages
-                .Where(messageFilter)
-                .CountAsync();
-        }
-    }
-
-    public async Task<bool> IsUserInChat(long userId, long chatId)
-    {
-        var spec = new ChatSpecification(new ChatFilter(new []{chatId}));
-        spec.IncludeChatUsers(new ChatUserFilter()
-        {
-            UserId = userId
-        });
-
-        return (await GetChat(spec)).ChatUsers.Any();
+        var chat = await LoadChatBySpecificationAsync(new ChatSpecification(new ChatFilter(new []{chatId})));
+        chat.DeleteUserFromChat(userId, inviterId);
     }
 }

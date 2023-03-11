@@ -20,6 +20,13 @@ public class ImagesManager
         _coreContext = coreContext;
     }
     
+    public async Task<ICollection<ImageDomainModel>> LoadBySpecificationAsync(ImagesSpecification specification)
+    {
+        return (await _coreContext.Images.LoadBySpecificationAsync(specification))
+            .Select(i => _imageDomainModelFactory.CreateFromImage(i))
+            .ToArray();
+    }
+
     public async Task<ICollection<ImageDomainModel>> UploadNewImagesAsync(ICollection<string> base64texts)
     {
         var images= base64texts.Select(x => _imageDomainModelFactory.CreateNew(x)).ToList();
