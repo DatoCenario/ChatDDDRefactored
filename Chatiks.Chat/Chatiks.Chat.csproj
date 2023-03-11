@@ -22,4 +22,8 @@
         <ProjectReference Include="..\Chatiks.User\Chatiks.User.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Data\EF\Migrations" />
+    </ItemGroup>
+
 </Project>

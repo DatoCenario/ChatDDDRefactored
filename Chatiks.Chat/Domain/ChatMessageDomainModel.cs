@@ -8,6 +8,7 @@ public class ChatMessageDomainModel: UniqueDeletableDomainModelBase
     private DateTime? _updateTime { get; set; }
 
     public string Text { get; private set; }
+    public long ChatId { get; private set; }
     public long UserId { get; }
     public DateTime SendTime { get; }
     public ICollection<ChatMessageImageDomainModel> Images { get; private set; }

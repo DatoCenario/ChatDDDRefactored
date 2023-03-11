@@ -79,7 +79,8 @@ public class ImagesManager
             {
                 var newImages = toCreate.Select(x => new Image()
                 {
-                    Base64Text = x.Base64ImageText
+                    Base64Text = x.Base64ImageText,
+                    LoadDate = x.LoadTime
                 });
             
                 await _coreContext.Images.AddRangeAsync(newImages);

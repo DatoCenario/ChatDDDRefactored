@@ -151,18 +151,6 @@ public class ChatManager
 
         return chats.Select(c => _chatDomainModelFactory.CreateFromChat(c)).ToList();
     }
-    
-    public async Task<ChatDomainModel> LoadChatBySpecificationAsync(ChatSpecification specification)
-    {
-        var chat = await _chatContext.Chats.FirstOrDefaultBySpecificationAsync(specification);
-        
-        if (chat == null)
-        {
-            throw new Exception("Chat not found");
-        }
-
-        return _chatDomainModelFactory.CreateFromChat(chat);
-    }
 
     public async Task<ChatMessageDomainModel> SendMessageToChatAsync(
         long userId,
@@ -217,5 +205,29 @@ public class ChatManager
     {
         var chat = await LoadChatBySpecificationAsync(new ChatSpecification(new ChatFilter(new []{chatId})));
         return chat.IsUserInChat(userId);
+    }
+    
+    public async Task<ChatDomainModel> LoadChatBySpecificationAsync(ChatSpecification specification)
+    {
+        var chat = await _chatContext.Chats.FirstOrDefaultBySpecificationAsync(specification);
+        
+        if (chat == null)
+        {
+            throw new Exception("Chat not found");
+        }
+
+        return _chatDomainModelFactory.CreateFromChat(chat);
+    }
+    
+    public Task<int> GetMessagesCountAsync(MessageFilter filter = null)
+    {
+        return _chatContext.ChatMessages.Where(filter).CountAsync();
+    }
+    
+    public async Task<ICollection<ChatMessageDomainModel>> LoadMessagesBySpecificationAsync(MessageSpecification specification)
+    {
+        var messages = await _chatContext.ChatMessages.LoadBySpecificationAsync(specification);
+        
+        return messages.Select(m => _chatDomainModelFactory.CreateFromMessage(m)).ToList();
     }
 }

@@ -1,5 +1,6 @@
 using Chatiks.Tools.DI;
 using Chatiks.User.Data.EF;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -10,9 +11,9 @@ namespace Chatiks.User;
 public class DIManager: IDiManager
 {
     private static bool _migated = false;
-    public void Register(IServiceCollection services)
+    public void Register(WebApplicationBuilder builder)
     {
-        services.AddScoped<UserContext>(p =>
+        builder.Services.AddScoped<UserContext>(p =>
         {
             var configuration = p.GetService<IConfiguration>();
             var connStr = Environment.GetEnvironmentVariable("EF_CORE_CONN") ?? configuration.GetValue<string>("PgDbConnectionString");
@@ -23,11 +24,13 @@ public class DIManager: IDiManager
             if (!_migated)
             {
                 context.Database.Migrate();
+                _migated = true;
             }
             
             return context;
         });
-        services.AddIdentity<Data.EF.Domain.User.User, IdentityRole<long>>()
+        
+        builder.Services.AddIdentity<Data.EF.Domain.User.User, IdentityRole<long>>()
             .AddEntityFrameworkStores<UserContext>()
             .AddDefaultTokenProviders();
     }

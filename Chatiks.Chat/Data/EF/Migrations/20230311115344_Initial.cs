@@ -32,6 +32,8 @@ namespace Chatiks.Chat.Data.EF.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ExternalOwnerId = table.Column<long>(type: "bigint", nullable: true),
+                    ExternalAvatarid = table.Column<long>(type: "bigint", nullable: true),
                     Name = table.Column<string>(type: "text", nullable: true),
                     IsPrivate = table.Column<bool>(type: "boolean", nullable: false)
                 },
@@ -49,7 +51,8 @@ namespace Chatiks.Chat.Data.EF.Migrations
                     ChatId = table.Column<long>(type: "bigint", nullable: false),
                     ExternalOwnerId = table.Column<long>(type: "bigint", nullable: false),
                     Text = table.Column<string>(type: "text", nullable: false),
-                    SendTime = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
+                    SendTime = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    EditTime = table.Column<DateTime>(type: "timestamp without time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -114,9 +117,19 @@ namespace Chatiks.Chat.Data.EF.Migrations
                 column: "ChatId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ChatUsers_Id",
+                table: "ChatUsers",
+                column: "Id");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ImageLinks_ChatMessageId",
                 table: "ImageLinks",
                 column: "ChatMessageId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ImageLinks_Id",
+                table: "ImageLinks",
+                column: "Id");
         }
 
         /// <inheritdoc />

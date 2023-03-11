@@ -19,4 +19,8 @@
     <ItemGroup>
       <ProjectReference Include="..\Chatiks.Tools\Chatiks.Tools.csproj" />
     </ItemGroup>
+    
+    <ItemGroup>
+      <Folder Include="Data\EF\Migrations" />
+    </ItemGroup>
 </Project>

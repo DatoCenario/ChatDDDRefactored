@@ -1,7 +1,10 @@
+using System.Reflection;
 using Chatiks.Chat.Data.EF;
+using Chatiks.Chat.Domain;
 using Chatiks.Chat.Managers;
 using Chatiks.Core.Managers;
 using Chatiks.Tools.DI;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,9 +14,9 @@ namespace Chatiks.Chat;
 public class DIManager: IDiManager
 {
     private static bool _migated = false;
-    public void Register(IServiceCollection services)
+    public void Register(WebApplicationBuilder builder)
     {
-        services.AddScoped<ChatManager>(p =>
+        builder.Services.AddScoped<ChatContext>(p =>
         {
             var configuration = p.GetService<IConfiguration>();
             var connStr = Environment.GetEnvironmentVariable("EF_CORE_CONN") ?? configuration.GetValue<string>("PgDbConnectionString");
@@ -24,10 +27,13 @@ public class DIManager: IDiManager
             if (!_migated)
             {
                 context.Database.Migrate();
+                _migated = true;
             }
-            
-            var imgManager = p.GetService<ImagesManager>();
-            return new ChatManager(new ChatsRepository(context), imgManager);
+
+            return context;
         });
+
+        builder.Services.AddScoped<ChatDomainModelFactory>();
+        builder.Services.AddScoped<ChatManager>();
     }
 }

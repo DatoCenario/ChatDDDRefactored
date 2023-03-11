@@ -18,6 +18,7 @@ public class ImageDomainModel: UniqueDeletableDomainModelBase, IDisposable
     private readonly CoreContext _coreContext;
 
 
+    public DateTime LoadTime { get; private set; }
     public int ImageWidth => _image.Width;
     public int ImageHeight => _image.Height;
     public string Base64ImageText => _image.ToBase64String(PngFormat.Instance);
@@ -25,6 +26,7 @@ public class ImageDomainModel: UniqueDeletableDomainModelBase, IDisposable
     public ImageDomainModel(
         long? id,
         string base64imageText,
+        DateTime loadTime,
         CoreContext coreContext): base(id)
     {
         _coreContext = coreContext;
@@ -49,6 +51,8 @@ public class ImageDomainModel: UniqueDeletableDomainModelBase, IDisposable
                 Height = (int)(_image.Height / delta)
             }));
         }
+
+        LoadTime = loadTime;
     }
 
     public void Resize(int width, int height)

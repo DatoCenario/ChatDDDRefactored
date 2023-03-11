@@ -22,32 +22,6 @@ namespace Chatiks.Chat.Data.EF.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Chatiks.Chat.Data.EF.Domain.Chat.AbstractClass", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Discriminator")
-                        .IsRequired()
-                        .HasMaxLength(13)
-                        .HasColumnType("character varying(13)");
-
-                    b.Property<string>("Field")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("AbstractClass", (string)null);
-
-                    b.HasDiscriminator<string>("Discriminator").HasValue("AbstractClass");
-
-                    b.UseTphMappingStrategy();
-                });
-
             modelBuilder.Entity("Chatiks.Chat.Data.EF.Domain.Chat.Chat", b =>
                 {
                     b.Property<long>("Id")
@@ -55,6 +29,12 @@ namespace Chatiks.Chat.Data.EF.Migrations
                         .HasColumnType("bigint");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long?>("ExternalAvatarid")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("ExternalOwnerId")
+                        .HasColumnType("bigint");
 
                     b.Property<bool>("IsPrivate")
                         .HasColumnType("boolean");
@@ -77,6 +57,9 @@ namespace Chatiks.Chat.Data.EF.Migrations
 
                     b.Property<long>("ChatId")
                         .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("EditTime")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<long>("ExternalOwnerId")
                         .HasColumnType("bigint");
@@ -162,28 +145,6 @@ namespace Chatiks.Chat.Data.EF.Migrations
                     b.HasIndex("Id");
 
                     b.ToTable("ChatUsers");
-                });
-
-            modelBuilder.Entity("Chatiks.Chat.Data.EF.Domain.Chat.Class1", b =>
-                {
-                    b.HasBaseType("Chatiks.Chat.Data.EF.Domain.Chat.AbstractClass");
-
-                    b.Property<string>("Field1")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasDiscriminator().HasValue("Class1");
-                });
-
-            modelBuilder.Entity("Chatiks.Chat.Data.EF.Domain.Chat.Class2", b =>
-                {
-                    b.HasBaseType("Chatiks.Chat.Data.EF.Domain.Chat.AbstractClass");
-
-                    b.Property<string>("Field2")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasDiscriminator().HasValue("Class2");
                 });
 
             modelBuilder.Entity("Chatiks.Chat.Data.EF.Domain.Chat.ChatMessage", b =>

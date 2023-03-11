@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Chatiks.Chat.Data.EF.Migrations
 {
     [DbContext(typeof(ChatContext))]
-    [Migration("20230306110448_Initial")]
+    [Migration("20230311115344_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -32,6 +32,12 @@ namespace Chatiks.Chat.Data.EF.Migrations
                         .HasColumnType("bigint");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long?>("ExternalAvatarid")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("ExternalOwnerId")
+                        .HasColumnType("bigint");
 
                     b.Property<bool>("IsPrivate")
                         .HasColumnType("boolean");
@@ -54,6 +60,9 @@ namespace Chatiks.Chat.Data.EF.Migrations
 
                     b.Property<long>("ChatId")
                         .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("EditTime")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<long>("ExternalOwnerId")
                         .HasColumnType("bigint");
@@ -89,6 +98,8 @@ namespace Chatiks.Chat.Data.EF.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ChatMessageId");
+
+                    b.HasIndex("Id");
 
                     b.ToTable("ImageLinks");
                 });
@@ -133,6 +144,8 @@ namespace Chatiks.Chat.Data.EF.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ChatId");
+
+                    b.HasIndex("Id");
 
                     b.ToTable("ChatUsers");
                 });

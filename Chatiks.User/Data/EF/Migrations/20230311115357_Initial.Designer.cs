@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Chatiks.User.Data.EF.Migrations
 {
     [DbContext(typeof(UserContext))]
-    [Migration("20230306110317_Initial")]
+    [Migration("20230311115357_Initial")]
     partial class Initial
     {
         /// <inheritdoc />

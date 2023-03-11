@@ -20,11 +20,11 @@ public class ImageDomainModelFactory
 
     public ImageDomainModel CreateFromImage(Image image)
     {
-        return new ImageDomainModel(image.Id, image.Base64Text, _coreContext);
+        return new ImageDomainModel(image.Id, image.Base64Text, image.LoadDate, _coreContext);
     }
     
     public ImageDomainModel CreateNew(string base64Text)
     {
-        return new ImageDomainModel(null, base64Text, _coreContext);
+        return new ImageDomainModel(null, base64Text, DateTime.Now, _coreContext);
     }
 }

@@ -36,20 +36,21 @@ public class GetChatMessagesHadnlder: CheckUserInChatQueryHandlerBase<GetChatMes
         var spec = new MessageSpecification(filter);
         spec.SetLimit(request.Count);
         spec.SetOffset(request.Offset);
-        var messages = await ChatManager.GetMessagesAsync(spec);
+        var messages = await ChatManager.LoadMessagesBySpecificationAsync(spec);
+        
         // Create common methods for composing like this
         var imagesIds = messages
-            .SelectMany(m => m.MessageImageLinks.Select(l => l.ExternalImageId))
+            .SelectMany(m => m.Images.Select(l => l.ImageExternalId.Value))
             .ToArray();
-        var images = await _imagesManager.GetImages(new ImagesSpecification(new ImagesFilter()
+        var images = await _imagesManager.LoadBySpecificationAsync(new ImagesSpecification(new ImagesFilter()
         {
             Ids = imagesIds
         }));
-        var sendersIds = messages.Select(m => m.ExternalOwnerId).ToArray();
+        var sendersIds = messages.Select(m => m.UserId).ToArray();
         var senders = await UserManager.Users.Where(u => sendersIds.Contains(u.Id)).ToDictionaryAsync(k => k.Id);
 
         var messagesData = messages
-            .Select(m => new ChatMessageAdapter(m, images, senders[m.ExternalOwnerId]).Adapt<ChatMessageReponse>())
+            .Select(m => new ChatMessageAdapter(m, images, senders[m.UserId]).Adapt<ChatMessageReponse>())
             .ToArray();
 
         foreach (var mess in messagesData)

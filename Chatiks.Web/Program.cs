@@ -55,7 +55,7 @@ var diManagerTypes =  AppDomain.CurrentDomain.GetAssemblies()
 foreach (var diManagerType in diManagerTypes)
 {
     var diManagerInstance = (IDiManager)Activator.CreateInstance(diManagerType);
-    diManagerInstance?.Register(builder.Services);
+    diManagerInstance?.Register(builder);
 }
 
 var app = builder.Build();

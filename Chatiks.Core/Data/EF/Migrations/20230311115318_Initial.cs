@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
@@ -17,6 +18,8 @@ namespace Chatiks.Core.Data.EF.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Format = table.Column<int>(type: "integer", nullable: false),
+                    LoadDate = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     Base64Text = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
